@@ -1,0 +1,70 @@
+{
+  "_note": "ลำดับระยะของสายงาน · pipeline.sh อ่านไฟล์นี้ ไม่ได้ฝังลำดับไว้ในตัวเอง",
+  "_placeholders": "{{CODE}} = รหัสโครงการ · {{PRD}} = รหัสเอกสารเต็ม · {{PRD_PATH}} = เส้นทางไฟล์ · แทนค่าโดย tools/stage.py จาก meta.code ใน project.yml",
+  "docs": {
+    "PRD": "1-product",
+    "SRS": "2-analysis",
+    "DSN": "3-design",
+    "RVW": "5-quality",
+    "QAR": "5-quality",
+    "REL": "6-release"
+  },
+  "stages": [
+    {
+      "id": "product",
+      "agent": "product-owner",
+      "gate": "G1",
+      "want": "PRD",
+      "expect": "{{PRD_PATH}}",
+      "task": "อ่าน 2 ไฟล์นี้เท่านั้น:\n  project/project.yml\n  .claude/skills/product-owner/assets/prd-template.md\nแล้วเขียน {{PRD_PATH}} ตามโครงของเทมเพลต\nต้องมี user story อย่างน้อย 4 เรื่อง แต่ละเรื่องมีเกณฑ์ยอมรับที่ตรวจได้จริง และมีเส้นทางผิดพลาดอย่างน้อย 1 ข้อต่อเรื่อง\nจากนั้นสร้าง project/REGISTER.md จาก .claude/skills/document-control/assets/register-template.md แทน XXX ด้วย {{CODE}} และใส่บรรทัดของ {{PRD}}"
+    },
+    {
+      "id": "analysis",
+      "agent": "system-analyst",
+      "gate": "G2",
+      "want": "SRS",
+      "expect": "{{SRS_PATH}}",
+      "task": "อ่าน 3 ไฟล์นี้เท่านั้น:\n  project/project.yml\n  {{PRD_PATH}}\n  .claude/skills/system-analyst/assets/srs-template.md\nแล้วเขียน {{SRS_PATH}}\nต้องมีแบบจำลองข้อมูล สถาปัตยกรรมพร้อมเหตุผลที่ปฏิเสธทางเลือกอื่น และตารางตรวจย้อนกลับจากทุกเกณฑ์ยอมรับใน {{PRD}} ไปยังรหัสกรณีทดสอบ TC-xx\nเติมบรรทัด {{SRS}} ลง project/REGISTER.md"
+    },
+    {
+      "id": "design",
+      "agent": "full-stack-design",
+      "gate": "G3",
+      "want": "DSN",
+      "expect": "{{DSN_PATH}}",
+      "task": "อ่าน 3 ไฟล์นี้เท่านั้น:\n  project/project.yml\n  {{SRS_PATH}}\n  .claude/skills/design-systems-architecture/assets/dsn-template.md\nแล้วเขียน {{DSN_PATH}}\nต้องมีโทเคนสี ตัวอักษร ระยะห่าง และอัตราส่วนความต่างสีเป็นตัวเลขจริงอย่างน้อย 6 คู่ พร้อมตารางสถานะของทุกหน้าจอ\nเติมบรรทัด {{DSN}} ลง project/REGISTER.md"
+    },
+    {
+      "id": "build",
+      "agent": "developer",
+      "gate": "G4",
+      "want": "โค้ดที่รันได้จริง",
+      "expect": "project/4-build/package.json",
+      "task": "อ่าน 3 ไฟล์นี้เท่านั้น:\n  project/project.yml\n  {{SRS_PATH}}\n  .claude/skills/developer/assets/definition-of-done.md\nแล้วสร้างแอปจริงใน project/4-build ตาม stack ที่ระบุใน project.yml\nต้องรันคำสั่งเหล่านี้จริงและผ่านจริง ห้ามเขียนแล้วเดาว่าผ่าน:\n  npm install\n  npm run build\n  npm test\nมีเทสต์อย่างน้อยเส้นทางหลัก 1 และเส้นทางผิดพลาด 1 และอ้างรหัส TC-xx จาก {{SRS}} ในชื่อเทสต์\nถ้าคำสั่งไหนไม่ผ่าน ให้แก้จนผ่านก่อนจบเทิร์น"
+    },
+    {
+      "id": "review",
+      "agent": "code-reviewer",
+      "gate": "G5",
+      "want": "RVW",
+      "expect": "{{RVW_PATH}}",
+      "task": "อ่านโค้ดใน project/4-build และ .claude/skills/code-reviewer/assets/review-report-template.md\nแล้วเขียน {{RVW_PATH}}\nระบุความรุนแรงทุกข้อ และปิดท้ายด้วยคำตัดสิน APPROVE หรือ REQUEST CHANGES\nคุณแก้โค้ดไม่ได้ · รายงานอย่างเดียว\nเติมบรรทัด {{RVW}} ลง project/REGISTER.md"
+    },
+    {
+      "id": "quality",
+      "agent": "quality-assurance",
+      "gate": "G6",
+      "want": "QAR",
+      "expect": "{{QAR_PATH}}",
+      "task": "อ่าน {{PRD_PATH}}, โค้ดใน project/4-build, และ .claude/skills/quality-assurance/assets/qa-report-template.md\nรันเทสต์จริงด้วย npm test แล้วแนบผลจริงลงรายงาน\nเขียน {{QAR_PATH}} ปิดท้ายด้วย PASS หรือ PASS WITH ADVISORIES หรือ BLOCK\nเติมบรรทัด {{QAR}} ลง project/REGISTER.md"
+    },
+    {
+      "id": "release",
+      "agent": "devops-release",
+      "gate": null,
+      "want": "REL",
+      "expect": "{{REL_PATH}}",
+      "task": "อ่าน {{QAR_PATH}} และ .claude/skills/devops-release/assets/release-record-template.md\nเขียน {{REL_PATH}}\nต้องมีรายการตรวจก่อนปล่อย แผนถอยกลับ และแผนเฝ้าระวังที่ระบุสัญญาณกับเกณฑ์เป็นตัวเลข\nเติมบรรทัด {{REL}} ลง project/REGISTER.md"
+    }
+  ]
+}

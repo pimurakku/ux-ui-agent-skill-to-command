@@ -1,0 +1,167 @@
+{
+  "_note": "ตัวละคร → agent จริง · x,y เป็นเปอร์เซ็นต์บนภาพฉาก room-empty.png (1536x1024) · y คือเส้นเท้า ตัวละครยืนบนเบาะใบนั้น · แถวหลัง 5 เบาะบนยกพื้น แถวหน้า 6 เบาะบนพื้นห้อง",
+  "_art": "ตัดจากสองแผ่น: crew-sheet-back-5.png (แถวหลัง ซ้าย→ขวา) และ crew-sheet-front-6.png (แถวหน้า) ด้วย tools/monitor/cut-crew.py ซึ่ง flood fill จากขอบภาพ ไม่ได้คีย์สีขาวทั้งภาพ",
+  "stations": [
+    {
+      "id": "the-visionary",
+      "name": "THE VISIONARY",
+      "role": "Product Owner",
+      "th": "หัวหน้ากลยุทธ์ผลิตภัณฑ์",
+      "agent": "product-owner",
+      "x": 28.9,
+      "y": 43.2,
+      "color": "#ACDC79",
+      "title": "PRINCIPAL PRODUCT STRATEGIST"
+    },
+    {
+      "id": "time-marshal",
+      "name": "TIME MARSHAL",
+      "role": "Project Manager",
+      "th": "หัวหน้าการส่งมอบ",
+      "agent": "project-manager",
+      "x": 39.4,
+      "y": 43.3,
+      "color": "#FEA3B4",
+      "title": "PRINCIPAL DELIVERY LEAD"
+    },
+    {
+      "id": "project-intake",
+      "name": "FIRST CONTACT",
+      "role": "Project Intake",
+      "th": "ผู้เชี่ยวชาญการเก็บโจทย์",
+      "agent": "project-intake",
+      "x": 49.8,
+      "y": 43.3,
+      "color": "#FF9C66",
+      "title": "DISCOVERY SPECIALIST"
+    },
+    {
+      "id": "systems-sage",
+      "name": "SYSTEMS SAGE",
+      "role": "Systems Analyst",
+      "th": "นักวิเคราะห์ระบบระดับสูงสุด",
+      "agent": "system-analyst",
+      "x": 60.2,
+      "y": 43.3,
+      "color": "#84CAFF",
+      "title": "PRINCIPAL SYSTEMS ANALYST"
+    },
+    {
+      "id": "experience-architect",
+      "name": "EXPERIENCE ARCHITECT",
+      "role": "UX/UI Designer",
+      "th": "สถาปนิกออกแบบระดับสูงสุด",
+      "agent": "full-stack-design",
+      "x": 70.7,
+      "y": 43.4,
+      "color": "#F97066",
+      "title": "PRINCIPAL DESIGN ARCHITECT"
+    },
+    {
+      "id": "document-control",
+      "name": "THE ARCHIVIST",
+      "role": "Document Control",
+      "th": "นายทะเบียนเอกสาร",
+      "agent": "document-control",
+      "x": 9.1,
+      "y": 64.6,
+      "color": "#D7D3D0",
+      "title": "DOCUMENT CONTROL OFFICER",
+      "scale": 1.08
+    },
+    {
+      "id": "bug-hunter",
+      "name": "BUG HUNTER",
+      "role": "QA",
+      "th": "หัวหน้าฝ่ายคุณภาพ",
+      "agent": "quality-assurance",
+      "x": 25.9,
+      "y": 64.3,
+      "color": "#FAA7E0",
+      "title": "PRINCIPAL QUALITY ENGINEER"
+    },
+    {
+      "id": "the-interface",
+      "name": "THE INTERFACE",
+      "role": "Frontend Developer",
+      "th": "วิศวกรหน้าบ้านระดับสูงสุด",
+      "agent": "developer",
+      "x": 42.0,
+      "y": 64.8,
+      "color": "#B2DDFF",
+      "title": "PRINCIPAL FRONTEND ENGINEER"
+    },
+    {
+      "id": "the-core",
+      "name": "THE CORE",
+      "role": "Backend Developer",
+      "th": "วิศวกรหลังบ้านระดับสูงสุด",
+      "agent": "developer",
+      "x": 58.3,
+      "y": 63.7,
+      "color": "#FDE272",
+      "title": "PRINCIPAL BACKEND ENGINEER"
+    },
+    {
+      "id": "the-gatekeeper",
+      "name": "THE GATEKEEPER",
+      "role": "Lead Reviewer",
+      "th": "หัวหน้าผู้ทบทวนโค้ด",
+      "agent": "code-reviewer",
+      "x": 75.1,
+      "y": 64.0,
+      "color": "#84ADFF",
+      "title": "PRINCIPAL CODE REVIEWER"
+    },
+    {
+      "id": "devops-release",
+      "name": "THE LAUNCHER",
+      "role": "DevOps / Release",
+      "th": "วิศวกรปล่อยรุ่นระดับสูงสุด",
+      "agent": "devops-release",
+      "x": 90.7,
+      "y": 64.6,
+      "color": "#E65C5C",
+      "title": "PRINCIPAL RELEASE ENGINEER",
+      "scale": 1.08
+    }
+  ],
+  "_extra": "ทุกบทบาทมีเบาะของตัวเองในภาพฉากแล้ว · รายการนี้จึงว่าง",
+  "extra": [],
+  "stages": [
+    "intake",
+    "product",
+    "analysis",
+    "design",
+    "build",
+    "review",
+    "quality",
+    "release"
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "th": "พร้อมเริ่มงาน"
+    },
+    {
+      "id": "G2",
+      "th": "ผู้วิเคราะห์ส่งมอบ"
+    },
+    {
+      "id": "G3",
+      "th": "ออกแบบพร้อมลงมือ"
+    },
+    {
+      "id": "G4",
+      "th": "ถือว่าเสร็จแล้ว"
+    },
+    {
+      "id": "G5",
+      "th": "ผ่านการทบทวนโค้ด"
+    },
+    {
+      "id": "G6",
+      "th": "พร้อมปล่อยจริง"
+    }
+  ]
+}

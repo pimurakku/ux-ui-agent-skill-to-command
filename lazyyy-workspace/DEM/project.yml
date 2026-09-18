@@ -1,0 +1,384 @@
+# project.yml — ความจำร่วมของทุกบทบาทในสายงาน
+#
+# ทุก skill อ่านไฟล์นี้ก่อนเริ่มงาน และเขียนกลับเมื่อได้คำตอบใหม่
+# กติกา — ไม่รู้ให้เขียน  TBD — ต้องการ [คน/ข้อมูล]  ห้ามเว้นว่าง ห้ามเดา
+# ตัวเลขที่เดา ให้บันทึกไว้ใต้ assumptions ด้วย
+
+meta:
+  name: "เตือนการบ้าน"                    # ชื่อโครงการ
+  code: DEM                               # รหัสสามตัวอักษรพิมพ์ใหญ่ ใช้แทน XXX ในรหัสเอกสาร
+  owner: pimurakku                        # ชื่อนักเรียนเจ้าของโครงการ
+  mode: solo                  # solo = คนเดียวเล่นครบทุกบทบาท
+  started: 2026-09-12                     # YYYY-MM-DD — วันที่เก็บโจทย์นี้
+  language: th                # ภาษาของเอกสารส่งมอบ
+
+# ระยะปัจจุบันของโครงการ — มีเพียง /gate เท่านั้นที่เลื่อนค่านี้
+# intake → product → analysis → design → build → review → quality → release
+stage: design
+
+problem:
+  statement: "นักเรียนมัธยมปลายลืมว่ามีการบ้านอะไรต้องส่งวันไหน จึงส่งงานไม่ทันกำหนด"
+  users: "นักเรียนมัธยมปลายที่เรียนหลายวิชาพร้อมกัน"
+  frequency: "TBD — ต้องการ [คน/ข้อมูล]"
+  today_workaround: "จดใส่กระดาษ หรือถามเพื่อนในไลน์"
+  cost: "TBD — ต้องการ [คน/ข้อมูล]"
+
+outcome:
+  metric: "TBD — ต้องการ [คน/ข้อมูล]"
+  baseline: "TBD — ต้องการ [คน/ข้อมูล]"
+  target: "TBD — ต้องการ [คน/ข้อมูล]"
+  measured_by: "TBD — ต้องการ [คน/ข้อมูล]"
+
+scope:
+  in:                         # อยู่ในขอบเขตรอบนี้
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  out:                        # ตัดออกอย่างชัดเจน — ต้องมี ไม่ใช่เว้นว่าง
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  constraints:                # เดดไลน์ แพลตฟอร์ม กฎหมาย ข้อมูลเดิม แบรนด์
+    - "เวลาทำงาน 30 วันทำงาน"
+    - "ไม่มีฐานข้อมูลฝั่งเซิร์ฟเวอร์ — เก็บข้อมูลใน localStorage ของเบราว์เซอร์"
+    - "ไม่ใช้เฟรมเวิร์ก — HTML/CSS/JS ล้วน"
+  approver: "TBD — ต้องการ [คน/ข้อมูล]"
+
+delivery:
+  people: "TBD — ต้องการ [คน/ข้อมูล] — โจทย์ระบุแต่เจ้าของโครงการ (pimurakku) ยังไม่ระบุว่าใครลงมือทำและกี่คน"
+  days_available: "30 วันทำงาน"
+  iteration_length: "TBD — ต้องการ [คน/ข้อมูล]"
+  hard_deadline: "TBD — ต้องการ [คน/ข้อมูล]"
+
+technical:
+  data_location: "เครื่องผู้ใช้ — localStorage ของเบราว์เซอร์ ไม่มีฐานข้อมูลฝั่งเซิร์ฟเวอร์"
+  offline: "TBD — ต้องการ [คน/ข้อมูล]"
+  integrations:               # ต่อกับระบบอะไรบ้าง
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  stack: "HTML/CSS/JavaScript ล้วน ไม่ใช้เฟรมเวิร์ก"
+  existing_code: "TBD — ต้องการ [คน/ข้อมูล]"
+
+design:
+  brand: "TBD — ต้องการ [คน/ข้อมูล]"
+  devices:                    # อุปกรณ์เป้าหมาย
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  existing_system: "TBD — ต้องการ [คน/ข้อมูล]"
+
+build:
+  definition_of_done:         # เกณฑ์ว่างานหนึ่งชิ้นเสร็จ — ดู skill developer
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  branch_convention: "TBD — ต้องการ [คน/ข้อมูล]"
+
+quality:
+  wcag: AA                    # ระดับที่ยึด
+  mutation_testing: false     # true เมื่อโครงการนี้ใช้การทดสอบการกลายพันธุ์ (ต้องมี tests/mutants.json)
+  browsers:                   # เบราว์เซอร์และรุ่นที่รองรับ
+    - "TBD — ต้องการ [คน/ข้อมูล]"
+  design_reference: "TBD — ต้องการ [คน/ข้อมูล]"
+
+release:
+  target: "TBD — ต้องการ [คน/ข้อมูล]"
+  approver: "TBD — ต้องการ [คน/ข้อมูล]"
+  rollback: "TBD — ต้องการ [คน/ข้อมูล]"
+
+# ข้อผูกพันที่ต้องเป็นจริงเสมอในโค้ด — กฎหมาย ความปลอดภัย หรือคำสัญญาที่ให้ผู้ใช้ไว้
+# ว่างไว้ไม่ได้ · ถ้าโครงการนี้ไม่มี ให้เขียน [] ไว้ให้เห็นชัดว่าตอบแล้วว่าไม่มี
+# correcter ตรวจทุกข้อที่ประกาศไว้กับไฟล์จริง — ข้อผูกพันที่ไม่มีเทสต์ คือข้อผูกพันบนกระดาษ
+invariants: []
+# - id: LAW-01
+#   text: ทุกหน้ารายละเอียดต้องแสดงคำเตือนสุขภาพเสมอ ไม่ขึ้นกับข้อมูลรายรายการ
+#   file: 4-build/src/components/HealthNotice.tsx
+#   used_in: 4-build/src/screens/Detail.tsx
+#   must_contain: <HealthNotice
+#   test: 4-build/tests/health-notice.test.tsx
+
+# ผลการตรวจประตู — เขียนโดย /gate เท่านั้น
+gates:
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-12
+    result: pass
+    attempt: 1
+    evidence:
+      - project/1-product/PRD-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G1 → PASS
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-12
+    result: pass
+    attempt: 2
+    evidence:
+      - project/1-product/PRD-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G1 → PASS
+  - id: G2
+    name: Analyst handback
+    checked: 2026-09-12
+    result: fail
+    attempt: 1
+    missing:
+      - ไม่ได้ผลลัพธ์ · ไม่พบ project/2-analysis/SRS-DEM-001.md
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-14
+    result: fail
+    attempt: 3
+    missing:
+      - GAT-01 · อ้างเอกสาร SRS-DEM-001 ที่ไม่มีอยู่
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-14
+    result: fail
+    attempt: 4
+    missing:
+      - GAT-01 · อ้างเอกสาร SRS-DEM-001 ที่ไม่มีอยู่
+  - id: G2
+    name: Analyst handback
+    checked: 2026-09-14
+    result: pass
+    attempt: 2
+    evidence:
+      - project/2-analysis/SRS-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G2 → PASS
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-15
+    result: pass
+    attempt: 5
+    evidence:
+      - project/1-product/PRD-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G1 → PASS
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-15
+    result: pass
+    attempt: 6
+    evidence:
+      - project/1-product/PRD-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G1 → PASS
+  - id: G1
+    name: Definition of Ready
+    checked: 2026-09-15
+    result: pass
+    attempt: 7
+    evidence:
+      - project/1-product/PRD-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G1 → PASS
+  - id: G2
+    name: Analyst handback
+    checked: 2026-09-15
+    result: pass
+    attempt: 3
+    evidence:
+      - project/2-analysis/SRS-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G2 → PASS
+  - id: G2
+    name: Analyst handback
+    checked: 2026-09-15
+    result: pass
+    attempt: 4
+    evidence:
+      - project/2-analysis/SRS-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G2 → PASS
+  - id: G3
+    name: Design ready to build
+    checked: 2026-09-15
+    result: fail
+    attempt: 1
+    missing:
+      - ไม่ได้ผลลัพธ์ · ไม่พบ project/3-design/DSN-DEM-001.md
+  - id: G2
+    name: Analyst handback
+    checked: 2026-09-15
+    result: pass
+    attempt: 5
+    evidence:
+      - project/2-analysis/SRS-DEM-001.md
+      - python3 tools/correcter/verify.py --gate G2 → PASS
+  - id: G3
+    name: Design ready to build
+    checked: 2026-09-15
+    result: fail
+    attempt: 2
+    missing:
+      - ไม่ได้ผลลัพธ์ · ไม่พบ project/3-design/DSN-DEM-001.md
+  - id: G3
+    name: Design ready to build
+    checked: 2026-09-15
+    result: fail
+    attempt: 3
+    missing:
+      - ไม่ได้ผลลัพธ์ · ไม่พบ project/3-design/DSN-DEM-001.md
+# - id: G1
+#   name: Definition of Ready
+#   checked: 2026-08-14
+#   result: fail            # pass | fail
+#   missing:
+#     - ยังไม่มี acceptance criteria สำหรับเส้นทางที่ผิดพลาด
+
+# ช่องที่ยังไม่มีคำตอบ — ทุกช่องที่เป็น TBD ต้องมีรายการที่นี่
+open_questions:
+  - field: problem.frequency
+    note: "TBD — ต้องการเจ้าของโครงการ/นักเรียนกลุ่มเป้าหมาย ว่าลืมการบ้านบ่อยแค่ไหน"
+    raised: 2026-09-12
+  - field: problem.cost
+    note: "TBD — ต้องการเจ้าของโครงการ ว่าถ้าไม่แก้แล้วเสียอะไร"
+    raised: 2026-09-12
+  - field: outcome.metric
+    note: "TBD — ต้องการตัวเลขที่ใช้วัดผล ยังไม่มีในโจทย์"
+    raised: 2026-09-12
+  - field: outcome.baseline
+    note: "TBD — ต้องการค่าฐานวันนี้ ยังไม่มีการเก็บข้อมูล"
+    raised: 2026-09-12
+  - field: outcome.target
+    note: "TBD — ต้องการเป้าหมายตัวเลขจากเจ้าของโครงการ"
+    raised: 2026-09-12
+  - field: outcome.measured_by
+    note: "TBD — ต้องการว่าใครวัดและวัดเมื่อไหร่"
+    raised: 2026-09-12
+  - field: scope.in
+    note: "TBD — ต้องการเจ้าของโครงการระบุสิ่งที่อยู่ในขอบเขตรอบนี้"
+    raised: 2026-09-12
+  - field: scope.out
+    note: "TBD — ต้องการเจ้าของโครงการระบุสิ่งที่ตัดออกอย่างชัดเจน"
+    raised: 2026-09-12
+  - field: scope.approver
+    note: "TBD — ต้องการชื่อผู้อนุมัติขอบเขต"
+    raised: 2026-09-12
+  - field: delivery.people
+    note: "TBD — โจทย์ระบุแต่เจ้าของโครงการ ยังไม่รู้ว่าใครลงมือทำและกี่คน"
+    raised: 2026-09-12
+  - field: delivery.iteration_length
+    note: "TBD — ต้องการเจ้าของโครงการระบุความยาวรอบทำงาน"
+    raised: 2026-09-12
+  - field: delivery.hard_deadline
+    note: "TBD — ต้องการรู้ว่ามีเดดไลน์ที่ขยับไม่ได้หรือไม่ (30 วันทำงานคือเวลาที่มี ยังไม่ยืนยันว่าเป็นเดดไลน์ตายตัว)"
+    raised: 2026-09-12
+  - field: technical.offline
+    note: "TBD — ต้องการเจ้าของโครงการยืนยันว่าต้องใช้งานตอนไม่มีเน็ตไหม"
+    raised: 2026-09-12
+  - field: technical.integrations
+    note: "TBD — ต้องการรู้ว่าต่อกับระบบอื่นไหม (เช่น ไลน์ ปฏิทิน) ยังไม่มีในโจทย์"
+    raised: 2026-09-12
+  - field: technical.existing_code
+    note: "TBD — ต้องการรู้ว่ามีโค้ดเดิมหรือเริ่มจากศูนย์"
+    raised: 2026-09-12
+  - field: design.brand
+    note: "TBD — ต้องการแนวทางโทน สี ตัวอักษร"
+    raised: 2026-09-12
+  - field: design.devices
+    note: "TBD — ต้องการรู้อุปกรณ์เป้าหมาย (มือถือ/เดสก์ท็อป)"
+    raised: 2026-09-12
+  - field: design.existing_system
+    note: "TBD — ต้องการรู้ว่ามี design system เดิมไหม"
+    raised: 2026-09-12
+  - field: build.definition_of_done
+    note: "TBD — ยังไม่ได้กำหนดเกณฑ์ว่างานเสร็จ"
+    raised: 2026-09-12
+  - field: build.branch_convention
+    note: "TBD — ยังไม่ได้กำหนดวิธีตั้งชื่อ branch"
+    raised: 2026-09-12
+  - field: quality.browsers
+    note: "TBD — ต้องการรายชื่อเบราว์เซอร์และรุ่นที่รองรับ"
+    raised: 2026-09-12
+  - field: quality.design_reference
+    note: "TBD — ยังไม่มีไฟล์แบบสำหรับใช้เทียบ"
+    raised: 2026-09-12
+  - field: release.target
+    note: "TBD — ต้องการรู้ว่าปล่อยขึ้นที่ไหน"
+    raised: 2026-09-12
+  - field: release.approver
+    note: "TBD — ต้องการชื่อผู้กดปล่อย"
+    raised: 2026-09-12
+  - field: release.rollback
+    note: "TBD — ยังไม่ได้กำหนดวิธีถอยกลับ"
+    raised: 2026-09-12
+  - field: scope.out
+    note: "PRD-DEM-001 ข้อ 5 เสนอรายการ 'ไม่ทำ' ที่อนุมานจาก scope.constraints (INFERRED) — ต้องการเจ้าของโครงการยืนยันหรือคัดค้าน ก่อนจะย้ายลงมาเป็นคำตอบในช่องนี้"
+    raised: 2026-09-12
+  - field: outcome.metric
+    note: "PRD-DEM-001 ข้อ 4 เสนอนิยามตัวชี้วัด M1–M3 และ guardrail G1–G2 ที่เป็นจำนวนนับลดลงได้ (INFERRED) — ต้องการเจ้าของโครงการยืนยันนิยาม แล้วจึงเก็บค่าฐาน"
+    raised: 2026-09-12
+  - field: "PRD-DEM-001 §7.1 US-05"
+    note: "TBD — ต้องการความยาวสูงสุดของชื่องานและชื่อวิชา เพื่อปิดเกณฑ์ยอมรับเส้นทางผิดพลาด (AC-05.5)"
+    raised: 2026-09-12
+  - field: "PRD-DEM-001 §9"
+    note: "TBD — ต้องการงบประมาณสมรรถนะ (เวลาที่ยอมรับได้ตั้งแต่เปิดหน้าจนรายการแสดงครบ) ผูกกับ quality.browsers และ design.devices ที่ยังเป็น TBD"
+    raised: 2026-09-12
+  - field: release.rollback
+    note: "PRD-DEM-001 ข้อ 11 เสนอเงื่อนไขที่ควรถอยกลับว่า guardrail G-2 มากกว่า 0 (มีข้อมูลผู้ใช้หายแม้แต่รายการเดียว) — เป็นการอนุมาน (INFERRED) ต้องการผู้อนุมัติยืนยัน พร้อมวิธีถอยกลับจริง"
+    raised: 2026-09-14
+  - field: "PRD-DEM-001 §7.2"
+    note: "ยังไม่มีเรื่องราวผู้ใช้เรื่องใดผ่าน Definition of Ready ครบ — ขาดไฟล์แบบ (quality.design_reference) และงบประมาณสมรรถนะเหมือนกันทุกเรื่อง ต้องปิดก่อนเข้ารอบพัฒนา"
+    raised: 2026-09-14
+  # --- เปิดโดย SRS-DEM-001 rev 00 (ระยะวิเคราะห์) ---
+  - field: "SRS-DEM-001 §2.3 O-01"
+    note: "TBD — ช่อง 'วิชา' บังคับกรอกหรือไม่ · PRD ไม่มีเกณฑ์ยอมรับเส้นทางผิดพลาดสำหรับวิชาว่าง (มีเฉพาะชื่องาน AC-01.4) ออกแบบบนข้อสมมติ A-01 ว่าไม่บังคับ · ขวาง BR-01 และ TC-04"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.3 O-02"
+    note: "TBD — ช่อง 'วันกำหนดส่ง' ว่างได้หรือไม่ และถ้าว่างได้ต้องอยู่ตำแหน่งใดในลำดับ · ออกแบบบนข้อสมมติ A-02 ว่าบังคับกรอก · ขวาง BR-04 และ TC-08"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.3 O-03"
+    note: "TBD — เส้นแบ่งวันของคำว่า 'เลยกำหนด' (เวลาใด เขตเวลาใด) · ออกแบบบนข้อสมมติ A-03 ว่าใช้วันตามปฏิทินท้องถิ่นของอุปกรณ์ เส้นแบ่ง 00:00 น. · ขวางผลคาดหวังของ TC-10 และ TC-31…TC-36"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §4.3"
+    note: "TBD — ความจุที่ต้องรองรับ (จำนวนงานต่อผู้ใช้) PRD ไม่ระบุไว้เลย · ออกแบบบนข้อสมมติ A-04 ≈400 รายการต่อปีการศึกษา · ขวางการปิด ADR-01 และ TC-39"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-01"
+    note: "ข้อขัดแย้ง — AC-04.5 สั่งให้ตรวจจับ 'ผู้ใช้เปิดจากอีกเครื่องหนึ่ง' แต่ PRD ข้อ 5.1 ตัดระบบบัญชีออก ระบบจึงแยกจาก 'เปิดใช้ครั้งแรก' ไม่ได้ · ต้องเปิด /cr แก้ PRD · ขวาง TC-25"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-02"
+    note: "ข้อขัดแย้ง — AC-03.1 บังคับกด 1 ครั้ง แต่ guardrail G-02 เขียนว่าไม่เกิน 2 ครั้ง และ AC-03.1 อ้าง G-02 ราวกับตรงกัน · ต้องเปิด /cr · ขวางผลคาดหวังของ TC-15"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-03"
+    note: "ข้อขัดแย้ง — AC-02.5 สั่งทั้ง 'ยังเพิ่มงานใหม่ได้' และ 'ไม่ลบข้อมูลเดิมทิ้งเอง' ซึ่งทำพร้อมกันไม่ได้ถ้าข้อมูลอยู่คีย์เดียว · ออกแบบบนข้อสมมติ A-07 (กักข้อมูลไว้คีย์ใหม่ ADR-03) ต้องยืนยัน"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-04"
+    note: "ข้อขัดแย้ง — AC-04.2 (สองแท็บ) กับ G-01 (ห้ามมีรายการหายเอง) ไม่มีเกณฑ์ใดครอบคลุมการเขียนพร้อมกัน · ออกแบบตาม ADR-02 และเพิ่ม TC-22 · ต้องเพิ่มเกณฑ์ยอมรับใน PRD"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-05"
+    note: "ข้อขัดแย้ง — US-05 ลบงานได้ ทำให้ M1 ลดลงได้ด้วยการลบ และแยกจาก 'ข้อมูลหายเอง' ที่ G-01 ห้ามไม่ได้ · ออกแบบตาม ADR-06 (ลบแบบทิ้งร่องรอย) ซึ่งไม่มีข้อกำหนดใดสั่ง ต้องยืนยันหรือคว่ำ"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-06"
+    note: "ข้อขัดแย้ง — PRD ข้อ 4 บอกว่า M1 วัดได้เองจากข้อมูลในเครื่อง แต่ไม่มีเกณฑ์ยอมรับใดสั่งให้เก็บเวลาที่ทำเครื่องหมายว่าส่งแล้ว จึงนับ M1 ย้อนหลังรายสัปดาห์ไม่ได้ · SRS เพิ่ม submitted_at ไว้ ต้องยืนยัน"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-07"
+    note: "ข้อขัดแย้ง — PRD ข้อ 9 สัญญาว่าข้อมูลอยู่จนกว่าผู้ใช้จะลบเอง ขัดกับ AC-04.4 ที่บรรยายกรณีเบราว์เซอร์ล้างข้อมูลเอง · ต้องเติมเงื่อนไขในข้อ 9"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §2.5 CONF-09"
+    note: "ข้อขัดแย้ง — AC-02.2 ต้องการลำดับคงที่ แต่ไม่มีข้อกำหนดใดสั่งให้เก็บลำดับการบันทึก · SRS เพิ่ม created_seq/next_seq ไว้ (BR-04) ต้องยืนยัน"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §5.2 ADR-05"
+    note: "TBD — ยังตัดสินวิธีส่งมอบตัวแอปและการทำงานตอนไม่มีเน็ตไม่ได้ เพราะ technical.offline และ release.target ยังเป็น TBD · ขวางสถานะหน้าจอ 'ออฟไลน์' และข้อ 10 ของ SRS"
+    raised: 2026-09-14
+  - field: "SRS-DEM-001 §10"
+    note: "TBD — ประมาณการที่ปรับใหม่เขียนไม่ได้ ไม่มีประมาณการเดิมให้เทียบ (PRD ข้อ 11 จงใจไม่ใส่) และ delivery.people ยังเป็น TBD · SRS ให้ไว้เฉพาะฐานของการประมาณ"
+    raised: 2026-09-14
+
+# ตัวเลขหรือข้อเท็จจริงที่เป็นการเดา ไม่ใช่ของที่รู้จริง
+assumptions:
+  - text: "เจ้าของโครงการเสนอวิธีแก้มาแล้วว่าใช้ HTML/CSS/JS ล้วน ไม่ใช้เฟรมเวิร์ก ไม่มีฐานข้อมูล เก็บข้อมูลใน localStorage — บันทึกไว้เป็นวิธีแก้ที่เขาเสนอ ยังไม่ใช่ข้อกำหนดที่ผ่านการตรวจกับปัญหา"
+    source: "เจ้าของโครงการ (pimurakku) เสนอเอง"
+    raised: 2026-09-12
+  - text: "มีเวลา 30 วันทำงาน — ยังไม่ยืนยันว่าหักวันลาและวันประชุมออกแล้วหรือยัง"
+    source: "เจ้าของโครงการ (pimurakku) ระบุเอง"
+    raised: 2026-09-12
+  - text: "A-01 · ช่องวิชาไม่บังคับกรอก — อนุมานเพราะไม่มีเกณฑ์ยอมรับใดปฏิเสธวิชาว่าง"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §11"
+    raised: 2026-09-14
+  - text: "A-02 · ช่องวันกำหนดส่งบังคับกรอก — อนุมานเพราะการเรียงลำดับ (AC-02.1) และสถานะเลยกำหนด (AC-02.3) นิยามไม่ได้ถ้าไม่มีค่า"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §11"
+    raised: 2026-09-14
+  - text: "A-03 · 'เลยกำหนด' ใช้วันตามปฏิทินท้องถิ่นของอุปกรณ์ เส้นแบ่งวันเวลา 00:00 น. — PRD ไม่ระบุเส้นแบ่งวันหรือเขตเวลา"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §11"
+    raised: 2026-09-14
+  - text: "A-04 · ความจุ ≈400 รายการต่อผู้ใช้ต่อปีการศึกษา (10 งาน/สัปดาห์ × 40 สัปดาห์) และขนาดต่อรายการ ≈440 ไบต์ → ≈176 KB — เป็นตัวเลขที่นักวิเคราะห์คำนวณเอง ไม่ใช่ตัวเลขที่ใครยืนยัน · โควตา localStorage จริงยังไม่รู้เพราะ quality.browsers เป็น TBD"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §4.3"
+    raised: 2026-09-14
+  - text: "A-05 · ข้อห้ามเรื่องปฏิทิน (PRD ข้อ 5.8) ตีความว่าห้ามมุมมองรายการแบบปฏิทิน ไม่ได้ห้ามตัวเลือกวันที่ในแบบฟอร์ม"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §11"
+    raised: 2026-09-14
+  - text: "A-06 · การลบงานเป็นการลบแบบทิ้งร่องรอย (deleted_at) ไม่ใช่ลบถาวร — ตัดสินโดยนักวิเคราะห์เพื่อให้ G-01 และ M1 พิสูจน์ได้ ไม่มีข้อกำหนดใดสั่ง (ADR-06)"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §5.2"
+    raised: 2026-09-14
+  - text: "A-07 · ข้อมูลที่อ่านไม่ได้ถูกคัดลอกไปเก็บในคีย์แยกก่อนเริ่มชุดใหม่ (ADR-03) — เกิดจากข้อขัดแย้งภายใน AC-02.5 เอง ไม่ได้มาจากข้อกำหนด"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §5.2"
+    raised: 2026-09-14
+  - text: "A-08 · project.yml ที่นักวิเคราะห์อ่านเมื่อ 2026-09-14 ถือว่าเป็นฉบับเดียวกับที่ PRD-DEM-001 rev 01 อ้าง (ลงวันที่ 2026-09-12) — ไฟล์ไม่มีหมายเลขฉบับจึงตรวจเทียบตรง ๆ ไม่ได้"
+    source: "นักวิเคราะห์ระบบ · SRS-DEM-001 §11"
+    raised: 2026-09-14

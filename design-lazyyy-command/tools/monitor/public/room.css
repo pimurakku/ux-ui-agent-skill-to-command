@@ -1,0 +1,1328 @@
+/* Mission Control — the room.
+   Every colour that identifies a role comes in as --tint from roster.json, so
+   adding a ninth station is a data change, not a stylesheet change. */
+
+:root{
+  --ink:#FBF3E8; --dim:#CBB094; --faint:#9C8468;
+  --glass:rgba(34,22,15,.76); --edge:rgba(240,180,94,.22);
+  --pass:#34D399; --warn:#F0B429; --stop:#FB7185;
+  /* The one colour every character's floor ring and nameplate status dot use,
+     regardless of role. It used to be --tint (the role's own colour), which
+     on a role whose cushion is close to its own tint — the-core's gold on a
+     gold cushion — made the ring disappear into the platform it was standing
+     on. State should read the same way on every desk; only role identity
+     (the plate, the dock dot) should change with --tint. */
+  --ring:#F6E6C8;
+  --hud:64px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:#180F09; color:var(--ink); overflow:hidden;
+  font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+  font-weight:400; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+/* Thai sits lower and taller than Latin; without the extra leading the
+   descenders on ญ ฏ ฐ collide with the line under them in these small chips. */
+#quests li,#verdict span,#brief-body{line-height:1.72}
+button{font:inherit;color:inherit}
+
+#stage{position:relative;width:100vw;height:100vh;overflow:hidden}
+
+/* ── the set ─────────────────────────────────────────────────────────────── */
+/* The set is a fixed 3:2 stage, letterboxed into the window, because every
+   character coordinate is a percentage of the ARTWORK — a desk is at 13.7% of
+   the painting, not of whatever shape the window happens to be. With `cover`
+   the painting is cropped by a different amount at every window size, so the
+   characters would drift off their desks the moment anyone resized. */
+#room{
+  /* inset:0 + margin:auto centers a box with explicit width/height exactly
+     like top/left/translate did, but without `translate` — any transform,
+     even just for centering, forces its own stacking context, which is what
+     let #room outrank a sibling like #dock the moment anything inside it
+     (#cast, a hovered station) tried to. Plain position:absolute + z-index
+     auto does not create one, so #room now always paints at the bottom,
+     where the scene background belongs, and #cast:has() below can actually
+     reach past it instead of being capped at #room's own level. */
+  position:absolute; inset:0; margin:auto;
+  width:min(100vw, calc(100vh * 1.5));
+  height:min(100vh, calc(100vw / 1.5));
+  /* The stage is letterboxed, so its height is not the window's height. Every
+     character coordinate is already a percentage of the stage; sizing them in
+     `vh` instead measured the window, and on any window that is not 3:2 the
+     characters grew out of their cushions while their feet stayed put. */
+  --stage-h:min(100vh, calc(100vw / 1.5));
+  background:#1B120B center/cover no-repeat;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 12%, rgba(255,196,120,.20), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(44,27,16,.88), transparent 70%),
+    linear-gradient(180deg,#241709,#1B1108 60%,#150D06);
+}
+#room.has-art::before{
+  content:""; position:absolute; inset:0;
+  background:var(--art) center/100% 100% no-repeat;
+  filter:brightness(.96) saturate(1.03) contrast(1.02);
+}
+#room::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse 70% 65% at 50% 52%, transparent 42%, rgba(58,32,14,.40) 100%);
+}
+/* the floor disc the whole room reads from */
+#floorglow{
+  display:none; position:absolute; left:50%; top:56%; width:min(62vw,860px); aspect-ratio:2.6/1;
+  transform:translate(-50%,-50%); pointer-events:none; opacity:.75;
+  background:
+    radial-gradient(ellipse at center, rgba(240,180,94,.13), transparent 62%);
+}
+#floorglow::before,#floorglow::after{
+  content:""; position:absolute; inset:12% 6%; border-radius:50%;
+  border:1px solid rgba(240,180,94,.14);
+}
+#floorglow::after{inset:28% 20%; border-color:rgba(240,180,94,.1)}
+
+/* The centre core used to sit here: two spinning rings and a beating crest,
+   labelled ORCHESTRATOR. It marked where orders came from and where they were
+   handed back. On a painted room it was one more bright thing competing with
+   the set, and the thing it named — the shell that drives the stages — is not
+   a character in the room at all. What it reported still shows in the feed.
+   ── */
+
+/* ── order wires ─────────────────────────────────────────────────────────── */
+/* An <svg> is a replaced element: for an absolutely-positioned one, `inset:0`
+   alone does not stretch it — an auto width/height resolves to the SVG's own
+   intrinsic size (300x150, the spec fallback when no width/height attribute
+   is set), not the containing block. wire()'s math reads this element's own
+   getBoundingClientRect() as "the stage", so every line it ever drew was
+   plotted against a 300x150 box pinned to the stage's top-left corner instead
+   of the actual room — squeezed into a sliver nobody would notice unless they
+   went looking for exactly this. Explicit width/height is what CSS actually
+   needs here; `inset:0` was doing nothing. */
+#wires{position:absolute; inset:0; width:100%; height:100%; z-index:3; pointer-events:none; overflow:visible}
+#wires path{fill:none; stroke-width:1.6; stroke-linecap:round;
+  filter:drop-shadow(0 0 6px currentColor)}
+
+/* ── a station ───────────────────────────────────────────────────────────── */
+#cast{position:absolute; inset:0; z-index:5}
+/* Every station's hover card (.screen) lives inside #cast's own stacking
+   context, so raising a station's z-index alone (below) is capped at #cast's
+   own 5 the moment it's compared to a sibling panel like #dock (31) — that
+   comparison happens one level up, at #cast itself, not at the station. Bump
+   the whole layer only while something inside is actually hovered, so
+   characters don't sit above the UI at rest. */
+#cast:has(.station:hover){z-index:35}
+
+/* A station's `top` is the line the character's FEET stand on. The figure
+   hangs above that line, the nameplate sits below it, and the info card is
+   placed relative to the head — the earlier version measured the card from the
+   feet, which is why it landed across the character's chest. */
+.station{
+  /* The cushions are drawn in perspective, so the two nearest the camera hold a
+     bigger character than the ones in line with them. `--figscale` comes from
+     roster.json per station, so matching a character to its cushion stays a
+     data change. */
+  --figbase:clamp(70px, calc(var(--stage-h) * .215), 300px);
+  --fig:calc(var(--figbase) * var(--figscale, 1));
+  /* The back arc is further away, so its characters are drawn smaller — a set
+     where everyone is the same height reads as a sticker sheet, not a room. */
+  /* The box a character stands in is stage-relative too. Fixed at 172px it
+     hung past the edge of a narrow stage, taking the corner desks' cards
+     with it. */
+  --sw:clamp(110px, calc(var(--stage-h) * .197), 172px);
+  position:absolute; width:var(--sw); margin-left:calc(var(--sw) / -2);
+  transition:left 2.4s cubic-bezier(.42,.02,.36,1), top 2.4s cubic-bezier(.42,.02,.36,1);
+}
+.station.busy{z-index:12}
+/* Keeps a hovered station's card above its *neighbours'* sprites within
+   #cast — clearing #cast itself, so this card can clear outside panels like
+   #dock, is the #cast:has() rule above. */
+.station:hover{z-index:35}
+
+.figure{
+  position:absolute; bottom:100%; left:0;
+  width:100%; height:var(--fig);
+  transform-origin:50% 100%;
+}
+.sprite{
+  position:absolute; inset:0;
+  background-repeat:no-repeat; background-size:contain; background-position:center bottom;
+  /* No filter at all: the character renders exactly as drawn. A brightness or
+     saturation push made the cat visibly lighter than its own source art, and
+     a drop-shadow behind it read as a coloured halo — "aura" is the right word
+     for it, and it is not what these paintings look like. Whether a role is
+     working is said by the floor ring under its feet, the plate, and the XP
+     bar — none of which touch the character's own pixels. */
+  transform-origin:50% 100%;
+}
+/* `.station.awake .sprite` used to brighten and saturate the cat and wrap it
+   in two tint-coloured drop-shadows here. Removed outright — see `.sprite`. */
+
+/* The two-pose strip, the stride that cycled it, the gait that rocked a single
+   pose, and the mirror that turned a character to face where it was going, all
+   lived here. They existed for the walk to the middle of the room, which is
+   gone: a role lights up at its own cushion now. */
+@media (prefers-reduced-motion:no-preference){
+  .station.awake .sprite{animation:idle 4s ease-in-out infinite}
+  .station.busy .sprite{animation:idle 1.9s ease-in-out infinite}
+}
+@keyframes idle{
+  0%,100%{transform:translateY(0) scale(1,1)}
+  50%    {transform:translateY(-2px) scale(.997,1.005)}
+}
+
+/* The ring: ambient, secondary feedback — never the first thing that says a
+   role is working (the nameplate dot below is). Thin border, one universal
+   warm colour, low opacity throughout. No blurred halo and no inset glow —
+   those read as a console light, not as a cushion catching warm light. */
+.pad{
+  position:absolute; left:50%; bottom:-6px; width:78%; height:13%;
+  transform:translateX(-50%); border-radius:50%;
+  border:1.5px solid var(--ring); opacity:.16;
+  transition:opacity .4s ease;
+}
+/* Back row only. Two things were wrong with reusing the front-row numbers
+   here: width comes from --sw, which does not shrink for the back row the
+   way --fig does — so the ring kept a front-row-scale width under a cushion
+   that reads noticeably smaller in the painting, sized for a platform wider
+   than the one actually on screen. And the fixed -6px drop below the feet is
+   a front-row amount; against the back row's much shorter --fig it is not
+   enough clearance, so the ring's near edge lands on the paws instead of the
+   floor in front of them.
+   Sized from --stage-h directly (the same source --fig itself is derived
+   from) and measured against the painted cushions, not guessed: back-row
+   platforms read as ~9% of the stage's width and ~4.5% of its height in the
+   background art, with about 3% of stage height between the feet line and
+   where the platform's own base actually ends. z-index moves it behind the
+   sprite in paint order — the ring is DOM-last in .figure, which used to put
+   it in front of the cat's feet whenever the ellipse geometrically reached
+   them, not just visually near them. */
+.station[data-row="back"] .pad{
+  width:calc(var(--stage-h) * .14); height:calc(var(--stage-h) * .045);
+  bottom:calc(var(--stage-h) * -.028); z-index:-1;
+}
+.station.awake .pad{opacity:.20}
+.station.busy  .pad{opacity:.30}
+
+@media (prefers-reduced-motion:no-preference){
+  .station.awake .pad{animation:padAwake 4s ease-in-out infinite}
+  .station.busy  .pad{animation:padBusy 1.9s ease-in-out infinite}
+  .station.rework .pad{animation:padFlash .9s ease-out 1}
+}
+/* Speaking freezes whatever pulse is running — a card is open, mid-sentence
+   is not the moment for the ring to be mid-fade. Declared after the media
+   block on purpose: `.busy .pad` and `.speaking .pad` are equally specific,
+   so without this ordering `busy`'s animation (declared second, inside the
+   block above) would keep winning over "no animation" whenever a role kept
+   working right up to the moment it had something to say — which is most of
+   the time this state actually fires. */
+.station.speaking .pad{opacity:.42; animation:none}
+/* transform is respecified at every stop, not just the changed one — a
+   keyframe that only sets `transform:scale(...)` drops the base rule's
+   translateX(-50%) the moment it starts, and the ring jumps off-centre for
+   the length of the animation. */
+@keyframes padAwake{
+  0%,100%{opacity:.20; transform:translateX(-50%) scale(1)}
+  50%    {opacity:.40; transform:translateX(-50%) scale(1)}
+}
+@keyframes padBusy{
+  0%,100%{opacity:.30; transform:translateX(-50%) scale(.98)}
+  50%    {opacity:.60; transform:translateX(-50%) scale(1.02)}
+}
+@keyframes padFlash{
+  0%  {opacity:.35; transform:translateX(-50%) scale(1)}
+  30% {opacity:.85; transform:translateX(-50%) scale(1.05)}
+  100%{opacity:.30; transform:translateX(-50%) scale(1)}
+}
+.shade{
+  position:absolute; left:50%; bottom:1px; width:60%; height:6.5%;
+  transform:translateX(-50%); border-radius:50%; opacity:.42;
+  background:radial-gradient(ellipse,rgba(0,0,0,.9),transparent 72%);
+}
+
+/* nameplate — the name, on one line, under the character.
+   Rank and Thai title used to ride along underneath it. Three lines under every
+   desk is three lines of furniture in a room with eleven desks, and in the back
+   row the block was wider than the gap between two cushions, so the plates
+   clipped each other. Both are still one hover away on the card. */
+.plate{
+  /* Every plate is the same plate. The border and the lettering used to take
+     the role's own colour, which turned eleven labels into eleven different
+     signs and made the row read as decoration rather than as one set of names.
+     One neutral warm charcoal, cream lettering, for all of them.
+     It used to carry a leading status dot too — a second, redundant "is it
+     working" cue sitting right next to the floor ring's own one. The name
+     plate now only answers "which one is this"; state lives on the ring. */
+  position:absolute; left:50%; top:7px; transform:translateX(-50%);
+  display:inline-flex; align-items:center; white-space:nowrap;
+  padding:1px 7px; border-radius:4px;
+  background:rgba(38,29,22,.88); border:1px solid rgba(238,228,212,.24);
+  backdrop-filter:blur(7px);
+  opacity:.82; transition:opacity .45s ease, box-shadow .45s ease, border-color .45s ease;
+}
+/* Working is shown by the same plate turning up, not by turning a colour on. */
+.station.awake .plate{
+  opacity:1; border-color:rgba(245,237,224,.5);
+  box-shadow:0 0 22px -8px rgba(245,237,224,.55);
+}
+.plate b{font-size:clamp(6px, calc(var(--stage-h) * .0097), 8.5px);
+  letter-spacing:.15em; color:#F3E9DA; font-weight:700}
+
+/* The back row wears its name above its head: under its feet is where the
+   front row's heads are, so the plate ended up half-hidden behind them.
+   Far away reads smaller — and a short name keeps five plates inside five
+   cushions that are only a tenth of the stage apart. Text stays the same
+   colour/contrast as the front row — only the container gets quieter, via a
+   touch less background opacity, never via fainter lettering. */
+.station[data-row="back"] .plate{
+  top:auto; bottom:calc(100% + var(--fig) + 6px); padding:1.3px 6px;
+  background:rgba(38,29,22,.76);
+}
+.station[data-row="back"] .plate b{font-size:clamp(5px, calc(var(--stage-h) * .0076), 6.5px); letter-spacing:.1em}
+
+/* Depth. The back row stands behind the front row, so anything belonging to it
+   — its plate included — is painted behind them. A plate that would land on a
+   front-row face disappears behind that face instead of covering it. */
+.station[data-row="back"]{z-index:1}
+.station[data-row="front"]{z-index:2}
+
+
+
+/* returned for rework — the loop the pipeline is built around */
+.station.rework .sprite{animation:shake .34s ease-in-out 3}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+/* ── HUD ─────────────────────────────────────────────────────────────────── */
+#hud{
+  position:absolute; top:0; left:0; right:0; height:var(--hud); z-index:30;
+  display:flex; align-items:center; gap:22px; padding:0 20px;
+  background:linear-gradient(180deg,rgba(26,16,9,.95) 30%,transparent);
+}
+.brand strong{display:block; font-size:12px; letter-spacing:.22em; color:#F0B45E; font-weight:600}
+.brand span{display:block; font-size:10.5px; color:var(--dim)}
+.rail{flex:1; min-width:0}
+.stages{display:flex; gap:5px}
+.stages div{
+  /* Line stays muted ("not started") but readably so — was .09, low enough
+     to almost disappear against the room's own dark background. */
+  flex:1; height:5px; border-radius:3px; background:rgba(255,255,255,.24);
+  position:relative; transition:background .5s, box-shadow .5s;
+}
+.stages div b{
+  /* Upcoming labels: var(--faint) is a muted brand tan tuned for decorative
+     secondary text, not for a label that has to stay legible at a glance —
+     it read as disabled rather than "not yet". A neutral ink at ~70% opacity
+     keeps it clearly a step below .done/.now (still less contrast than
+     either) without dropping into hard-to-read territory. */
+  position:absolute; top:9px; left:0; font-size:8px; font-weight:400;
+  letter-spacing:.1em; text-transform:uppercase; color:rgba(251,243,232,.7);
+  transition:color .4s;
+}
+.stages div.done{background:var(--pass); box-shadow:0 0 10px -2px var(--pass)}
+.stages div.done b{color:var(--dim)}
+.stages div.now{background:var(--warn); box-shadow:0 0 14px -1px var(--warn)}
+.stages div.now b{color:var(--warn)}
+/* .gates (the G1-G6 chip row) lived here — removed, the checklist at
+   #qlist on the right is the one copy of this data that stayed. */
+.chip{
+  padding:4px 11px; border-radius:4px; font-size:10px; letter-spacing:.1em;
+  background:var(--glass); border:1px solid var(--edge); color:var(--dim);
+  cursor:pointer; white-space:nowrap;
+}
+/* ── connection chip ─────────────────────────────────────────────────────
+   Four states, each its own colour and its own kind of motion — colour alone
+   repeats (live and reconnecting both had a pulse before this), so telling
+   them apart meant reading the word. Motion now carries part of the meaning
+   too: a heartbeat for "connected", a spin for "actively retrying", nothing
+   moving at all for the two states where nothing is happening right now. */
+#mode{
+  cursor:default; display:flex; align-items:center; gap:6px;
+  border-radius:999px; padding:4px 12px 4px 10px;
+}
+#mode .dot{
+  position:relative; width:6px; height:6px; border-radius:50%; flex:none;
+  background:var(--faint);
+}
+#mode.live{color:var(--pass); border-color:color-mix(in srgb,var(--pass) 45%,transparent);
+  background:color-mix(in srgb,var(--pass) 10%,var(--glass))}
+#mode.live .dot{background:var(--pass)}
+/* the heartbeat: a ring expands out of the dot and fades, the dot itself
+   holds steady so the label next to it never looks like it is flickering */
+#mode.live .dot::after{
+  content:""; position:absolute; inset:-3px; border-radius:50%;
+  border:1px solid var(--pass); opacity:0; animation:modeping 1.8s ease-out infinite;
+}
+@keyframes modeping{
+  0%{opacity:.65; transform:scale(.4)}
+  70%{opacity:0; transform:scale(2.1)}
+  100%{opacity:0; transform:scale(2.1)}
+}
+
+#mode.replay{color:var(--warn); border-color:color-mix(in srgb,var(--warn) 45%,transparent);
+  background:color-mix(in srgb,var(--warn) 10%,var(--glass))}
+#mode.replay .dot{background:var(--warn)}
+
+/* reconnecting / retry share the same neutral, unlit look — the chip is not
+   telling good news in either state, so it does not borrow green or amber */
+#mode.reconnecting,#mode.retry{
+  color:var(--faint); border-color:var(--edge); background:var(--glass);
+}
+#mode.reconnecting .dot{
+  width:9px; height:9px; background:none; border-radius:50%;
+  border:1.5px solid rgba(156,132,104,.3); border-top-color:var(--faint);
+  animation:modespin .8s linear infinite;
+}
+@keyframes modespin{to{transform:rotate(360deg)}}
+#mode.retry .dot{background:var(--faint)}
+
+@keyframes rise{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── verdict ─────────────────────────────────────────────────────────────── */
+#verdict{
+  position:absolute; right:20px; bottom:18px; z-index:30; min-width:210px;
+  padding:11px 16px; border-radius:7px; background:var(--glass);
+  border:1px solid var(--edge); backdrop-filter:blur(9px); transition:all .5s;
+}
+#verdict em{display:block; font-style:normal; font-size:8.5px; letter-spacing:.2em; color:var(--faint)}
+#verdict strong{display:block; font-size:15px; letter-spacing:.09em; margin:2px 0 3px; color:var(--dim)}
+#verdict span{display:block; font-size:11px; color:var(--dim); line-height:1.5}
+#verdict.PASS{border-color:var(--pass); box-shadow:0 0 34px -12px var(--pass)}
+#verdict.PASS strong{color:var(--pass)}
+#verdict.CORRECTED{border-color:var(--warn); box-shadow:0 0 34px -12px var(--warn)}
+#verdict.CORRECTED strong{color:var(--warn)}
+#verdict.BLOCKED{border-color:var(--stop); box-shadow:0 0 44px -10px var(--stop)}
+#verdict.BLOCKED strong{color:var(--stop)}
+#stage.blocked #room::after{
+  background:radial-gradient(ellipse 74% 68% at 50% 52%, transparent 52%, rgba(70,7,20,.42) 100%);
+}
+/* a stopped pipeline needs to be unmissable without hiding what stopped it */
+#stage.blocked::after{
+  content:""; position:absolute; inset:0; z-index:25; pointer-events:none;
+  box-shadow:inset 0 0 120px -34px var(--stop);
+  animation:alarm 2.6s ease-in-out infinite;
+}
+@keyframes alarm{50%{box-shadow:inset 0 0 160px -30px var(--stop)}}
+
+/* ── splash ──────────────────────────────────────────────────────────────── */
+#splash{
+  position:absolute; inset:0; z-index:60; display:grid; place-items:center;
+  background:rgba(26,16,9,.93); backdrop-filter:blur(11px);
+  transition:opacity .6s ease, visibility .6s;
+}
+#splash.gone{opacity:0; visibility:hidden}
+#splash>div{text-align:center; max-width:430px; padding:20px}
+#splash h1{margin:0 0 12px; font-size:26px; letter-spacing:.28em; color:#F0B45E; font-weight:600}
+#splash p{margin:0 0 22px; font-size:13px; line-height:1.85; color:var(--dim)}
+#splash button{
+  padding:11px 34px; border-radius:5px; cursor:pointer; font-size:13px; letter-spacing:.14em;
+  background:transparent; border:1px solid #F0B45E; color:#F0B45E; transition:all .3s;
+}
+#splash button:hover{background:rgba(240,180,94,.13); box-shadow:0 0 26px -8px #F0B45E}
+#splash small{display:block; margin-top:13px; font-size:10.5px; color:var(--faint)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s !important; transition-duration:.08s !important}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Game layer — the pipeline already keeps score, it just never showed anyone.
+   XP is a count of real tool calls, a level is a count of finished handoffs,
+   and the quest log is the six gates. Nothing here is a made-up number.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* `.plate .rank` ถูกลบไปพร้อมกับตัวป้ายสามบรรทัด · ยศอยู่บนการ์ดตอนชี้เมาส์ */
+.xp{
+  position:absolute; left:50%; top:44px; transform:translateX(-50%);
+  width:118px; height:3px; border-radius:2px; background:rgba(255,255,255,.1);
+  overflow:hidden; opacity:0; transition:opacity .4s;
+}
+.station.awake .xp{opacity:1}
+.xp i{display:block; height:100%; width:0; border-radius:2px; background:var(--tint);
+  box-shadow:0 0 8px var(--tint); transition:width .5s cubic-bezier(.2,.8,.3,1)}
+
+/* floating +N when a real action lands */
+.pop{
+  position:absolute; left:50%; bottom:calc(var(--fig) + 16px); font-size:13px; font-weight:700;
+  color:var(--tint); text-shadow:0 0 12px var(--tint); pointer-events:none;
+  animation:pop 1.1s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes pop{
+  0%  {opacity:0; transform:translate(-50%,8px)  scale(.8)}
+  25% {opacity:1; transform:translate(-50%,-10px) scale(1.12)}
+  100%{opacity:0; transform:translate(-50%,-44px) scale(1)}
+}
+
+/* quest log */
+/* ═══════════════════════════════════════════════════════════════════════════
+   G1–G6 readiness card.
+   Six rows, fixed for the life of the project (the list does not change with
+   `project.stage` — only the mark on each row does), so it has to read as a
+   checklist that is mostly settled, not as a second progress meter competing
+   with the phase rail above it. The old version drew exactly two looks — a
+   filled square for ruled gates, an identical empty square for both "hasn't
+   been reached yet" and "nobody has checked" — so a gate three phases away
+   looked exactly as unfinished as one sitting right in front of the team.
+   Three states now, each a different shape and weight, not just a colour. */
+#quests{
+  position:absolute; right:20px; top:calc(var(--hud) + 10px); z-index:30; width:228px;
+  padding:8px 11px 9.5px; border-radius:9px; background:var(--glass);
+  border:1px solid rgba(240,180,94,.14);
+  box-shadow:0 12px 30px -18px #000;
+  backdrop-filter:blur(10px);
+}
+/* Matches #dock h2 — one small, muted, secondary label, the same weight in
+   both bottom-corner panels. The subtitle line that used to sit under it said
+   "6 ข้อ · คงที่ทั้งโครงการ", a fact the six rows beneath it already show. */
+#quests h2{
+  margin:0 0 6px; font-size:8px; letter-spacing:.17em; color:var(--faint);
+  font-weight:600; text-transform:uppercase;
+}
+#quests ul{margin:0; padding:0; display:flex; flex-direction:column; gap:0}
+#quests li{
+  list-style:none; display:flex; align-items:center; gap:8px;
+  padding:4px 3px; border-radius:5px; line-height:1.4;
+  font-size:11px; color:var(--dim); transition:opacity .3s ease;
+}
+#quests .tick{
+  width:14px; height:14px; flex:none; display:grid; place-items:center;
+  border-radius:4px; transition:all .35s ease;
+}
+#quests .tick svg{
+  width:9px; height:9px; fill:none; stroke:currentColor; stroke-width:3;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+#quests .label{display:flex; align-items:baseline; gap:6px; min-width:0; flex:1}
+#quests .code{
+  flex:none; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:8.5px;
+  font-weight:600; letter-spacing:.03em; color:var(--faint);
+  background:rgba(255,255,255,.05); border-radius:3px; padding:1px 5px;
+}
+#quests .title{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;
+}
+/* Plain text, not a chip — a retry count is metadata about the gate, not
+   something to click or tap, and a pill made it look like one. */
+#quests .n{
+  flex:none; margin-left:auto; font-size:8px; color:var(--faint);
+  font-variant-numeric:tabular-nums;
+}
+
+/* passed — settled, quiet confirmation */
+#quests li.done .tick{
+  border-radius:4px; background:color-mix(in srgb,var(--pass) 22%,transparent);
+  border:1px solid var(--pass); color:var(--pass);
+}
+#quests li.done .title{color:var(--ink)}
+
+/* failed — the one row that should catch the eye first, without glowing.
+   No left border here on purpose: the tinted background, the filled icon,
+   and the warmer bold title carry the emphasis on their own. */
+#quests li.fail{
+  background:color-mix(in srgb,var(--stop) 8%,transparent);
+}
+#quests li.fail .tick{
+  border-radius:4px; background:color-mix(in srgb,var(--stop) 24%,transparent);
+  border:1px solid var(--stop); color:var(--stop);
+}
+#quests li.fail .title{color:color-mix(in srgb,var(--stop) 55%,var(--ink)); font-weight:600}
+
+/* future — not reached, not failed. Same rounded-square shape as the ticks
+   above it, not a circle: the three states should read as one family (a
+   status box, filled to three different degrees), not as three unrelated
+   icon systems the eye has to learn separately. Emptiness and the row's own
+   fade are what say "not yet", not a different outline shape. */
+#quests li.future{opacity:.52}
+#quests li.future .tick{border:1px solid rgba(203,176,148,.32)}
+#quests li.future .title{color:var(--faint)}
+
+/* score strip */
+#score{
+  /* Higher than #feed (also 30) on purpose: #score-popover lives inside this
+     stacking context, and its own z-index can't outrank a sibling context
+     no matter how high it goes — #score itself has to sit above #feed so the
+     popover doesn't render underneath the event log when it opens over it. */
+  position:absolute; left:20px; top:calc(var(--hud) + 10px); z-index:32;
+  display:flex; align-items:flex-start; gap:11px;
+}
+#score-cards{display:flex; gap:11px}
+/* Direct children only — #score div (a descendant selector) would also catch
+   #score-cards itself, styling the wrapper as a fifth, oversized card behind
+   the real four. */
+/* Same surface/border/radius as #dock and #quests (var(--edge) is a
+   stronger, higher-opacity gold than the .14 these panels actually use) —
+   the cards read as the same component family, just smaller. */
+#score-cards > div{
+  padding:7px 12px; border-radius:9px; background:var(--glass);
+  border:1px solid rgba(240,180,94,.14); backdrop-filter:blur(10px); text-align:center; min-width:70px;
+  /* Cards stay click-through, same as the #score container — the room behind
+     them (characters, wires) still needs the click. Only the help icon and
+     its popover, below, opt back into pointer events. */
+}
+#score b{display:block; font-size:17px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-weight:500; font-variant-numeric:tabular-nums; color:var(--ink); line-height:1.2}
+#score span{display:block; font-size:8.5px; letter-spacing:.13em; color:var(--faint); text-transform:uppercase}
+#score-cards > div.hot b{color:var(--warn)}
+
+/* One help icon for the whole group, not a tooltip per card — explains all
+   four metrics at once instead of making every card its own hit target. */
+#score-help{
+  /* appearance:none + padding:0 strip the UA button defaults — without them
+     the browser's own padding eats into this fixed 16x16 box (border-box),
+     leaving the 16x16 svg inside too big to fit and spilling outside the
+     button's real edges instead of sitting inside it. */
+  appearance:none; flex:none; position:relative;
+  width:16px; height:16px; padding:0; border-radius:50%;
+  display:grid; place-items:center;
+  background:transparent; border:0;
+  color:var(--faint);
+  cursor:pointer; pointer-events:auto; transition:color .2s ease;
+}
+#score-help svg{
+  width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.75;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+#score-help:hover, #score-help[aria-expanded="true"]{
+  color:var(--dim);
+}
+/* same amber keyboard-focus treatment as #control button (e.g. "ดูคำสั่งภารกิจ")
+   — :focus-visible only, so a mouse click never leaves the ring showing */
+#score-help:focus-visible{outline:2px solid #F0B45E; outline-offset:1px}
+
+/* left:0 + right:0 (no explicit width) stretches this to exactly #score's
+   own box — first card's left edge to the help icon's right edge — instead
+   of guessing a pixel width that has to be kept in sync with the cards by
+   hand. Shadow matches #quests, the other floating info panel. */
+#score-popover{
+  position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:31;
+  padding:10px 12px; border-radius:9px;
+  background:var(--glass); border:1px solid rgba(240,180,94,.14);
+  box-shadow:0 12px 30px -18px #000;
+  backdrop-filter:blur(10px); pointer-events:auto;
+}
+#score-popover[hidden]{display:none}
+#score-popover dl{margin:0; display:flex; flex-direction:column; gap:6px}
+#score-popover dt{
+  font-size:9px; letter-spacing:.06em; font-weight:600; color:var(--ink);
+}
+#score-popover dd{
+  margin:1px 0 0; font-size:10px; line-height:1.4; color:var(--dim);
+}
+#score-popover .note{
+  margin:8px 0 0; padding-top:7px; border-top:1px solid rgba(240,180,94,.14);
+  font-size:9px; line-height:1.5; color:var(--faint); font-style:italic;
+}
+
+/* achievement toast */
+/* The middle of the room belongs to the room. Notices stack down the right
+   column under the quest log, where nothing is standing.
+   186px → 234px: the G1–G6 card grew (three visual states instead of two, a
+   two-line heading) and this offset is a guess at its height, not a measured
+   one — it has to be updated by hand whenever that card's own height changes,
+   or a toast opens on top of the last gate row instead of below it. */
+#toasts{
+  position:absolute; right:20px; top:calc(var(--hud) + 10px + 234px);
+  z-index:40; display:flex; flex-direction:column; gap:8px;
+  align-items:flex-end; pointer-events:none; width:246px;
+}
+.toast{
+  width:100%; padding:9px 14px; border-radius:7px; text-align:left;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  background:linear-gradient(180deg,rgba(14,24,44,.97),rgba(8,14,28,.97));
+  border:1px solid var(--tone,#F0B45E);
+  box-shadow:0 12px 44px -14px #000, 0 0 34px -14px var(--tone,#F0B45E);
+  animation:toast 4.2s cubic-bezier(.2,.9,.3,1) forwards;
+}
+.toast em{
+  display:block; font-style:normal; font-size:8px; letter-spacing:.24em;
+  color:var(--tone,#F0B45E); margin-bottom:2px;
+}
+.toast strong{display:block; font-size:12.5px; letter-spacing:.01em}
+@keyframes toast{
+  0%  {opacity:0; transform:translateX(18px) scale(.96)}
+  8%  {opacity:1; transform:none}
+  86% {opacity:1; transform:none}
+  100%{opacity:0; transform:translateX(10px) scale(.98)}
+}
+
+/* mission briefing — what the owner actually asked for.
+   Used to sit permanently above the control bar (opacity-toggled, not
+   removed from flow), the largest fixture on screen for something read once,
+   if at all. A centred modal instead: open on demand, closed when done,
+   scrolling internally so a long brief never grows past a fixed height. */
+#brief-modal{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center}
+#brief-modal[hidden]{display:none}
+/* Dim, not blur — the brief is meant to be read against a still-recognisable
+   room, not a fully obscured one. */
+#brief-backdrop{position:absolute; inset:0; background:rgba(10,6,3,.55)}
+#brief-dialog{
+  position:relative; z-index:1; width:700px; max-width:calc(100vw - 32px);
+  max-height:70vh; display:flex; flex-direction:column;
+  background:var(--glass); border:1px solid rgba(240,180,94,.14);
+  border-radius:12px; box-shadow:0 24px 60px -20px #000;
+  backdrop-filter:blur(14px); overflow:hidden;
+}
+#brief-dialog header{
+  flex:none; display:flex; align-items:center; justify-content:space-between;
+  padding:11px 16px; border-bottom:1px solid rgba(240,180,94,.14);
+}
+#brief-dialog h2{
+  margin:0; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:#F0B45E; font-weight:600;
+}
+#brief-close{
+  width:26px; height:26px; padding:0; margin:0; border:0; border-radius:6px;
+  display:grid; place-items:center; background:transparent; color:var(--faint);
+  font-size:18px; line-height:1; cursor:pointer; transition:all .2s;
+}
+#brief-close:hover{background:rgba(240,180,94,.1); color:var(--ink)}
+#brief-close:focus-visible{outline:2px solid #F0B45E; outline-offset:1px}
+/* This is the one scrolling region — the header stays put above it, and the
+   dialog's own height never grows past max-height regardless of content
+   length. white-space:pre-wrap keeps line breaks from the source text. */
+#brief-body{
+  flex:1; min-height:0; overflow-y:auto; padding:14px 16px;
+  text-align:left; color:var(--dim); font-size:12.5px;
+  white-space:pre-wrap; word-break:break-word;
+}
+#brief-body code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px;
+  color:var(--faint); background:rgba(255,255,255,.05); padding:1px 4px; border-radius:4px;
+}
+/* subtle "open" state on the trigger — lighter than .go, matches the
+   button's own :hover treatment so it reads as pressed, not as a second CTA */
+#c-brief.on{background:rgba(240,180,94,.1); color:var(--ink)}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   One panel per desk.
+   Eight desks each floating an activity card *and* a speech bubble is sixteen
+   boxes fighting for the same screen, so there is one card and the spoken line
+   is a row inside it. Where the card sits is derived from where the desk is:
+   back-row desks open downward (upward would cross the HUD), corner desks
+   align to their own edge (centred would hang off the window).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.screen{
+  /* The stage shrinks with the window but a 236px card does not, so on a small
+     stage the card grew to a quarter of the room and started landing on the
+     desks either side. Sized from the stage, like everything else that has to
+     stay in proportion to it. */
+  --cardw:clamp(168px, calc(var(--stage-h) * .27), 236px);
+  position:absolute; width:var(--cardw); padding:9px 12px 10px; border-radius:8px; z-index:2;
+  background:linear-gradient(180deg,rgba(11,19,36,.96),rgba(6,11,22,.96));
+  border:1px solid color-mix(in srgb,var(--tint) 50%,transparent);
+  box-shadow:0 14px 44px -18px #000, 0 0 34px -18px var(--tint);
+  backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .34s ease, transform .34s cubic-bezier(.2,.8,.3,1);
+}
+/* The card belongs to the mouse, not to the work. Opening it by itself
+   whenever a role started put a 236px panel on top of whoever stood next to
+   it, for as long as that role kept working — and nobody had asked to read it.
+   Who is working is already said in two places that cover nothing: the strip
+   at the bottom-left and the feed. */
+.station:hover .screen{opacity:1}
+
+/* vertical placement */
+.screen{--nudge:0px}
+/* Clears this station's own plate, which sits above its head in the back row
+   (see .station[data-row="back"] .plate below) — not the neighbours' heads,
+   which an earlier version of this comment blamed. Measured against the
+   actual rendered plate each time this number changes; guessing it landed the
+   card's arrow inside the plate more than once. */
+.station[data-panel="above"] .screen{bottom:calc(100% + var(--fig) + 42px); transform:translateY(calc(8px + var(--nudge)))}
+.station[data-panel="above"]:hover .screen{transform:translateY(var(--nudge))}
+.station[data-panel="below"] .screen{top:calc(100% + 52px); transform:translateY(calc(-8px + var(--nudge)))}
+.station[data-panel="below"]:hover .screen{transform:translateY(var(--nudge))}
+/* a card pushed away from its desk grows a leader line back to it */
+.station .screen::before{
+  content:""; position:absolute; left:50%; width:1px;
+  background:linear-gradient(transparent,var(--tint));
+  opacity:.45; pointer-events:none;
+  height:max(0px, calc(var(--nudge) * -1)); top:calc(100% - 1px);
+}
+.station[data-panel="below"] .screen::before{
+  height:max(0px, var(--nudge)); bottom:auto; top:calc(100% - 1px);
+  background:linear-gradient(transparent,var(--tint));
+}
+
+/* horizontal placement — the card never crosses the viewport edge */
+.station[data-side="centre"] .screen{left:50%; margin-left:calc(var(--cardw) / -2)}
+/* 0, not -24px: hanging the card past its own box put the corner desks\n   off the edge of the stage on a narrow window */\n.station[data-side="left"]   .screen{left:0}
+.station[data-side="right"]  .screen{right:0}
+
+.screen em{
+  display:block; font-style:normal; font-size:8px; letter-spacing:.2em;
+  color:var(--tint); margin-bottom:4px; text-transform:uppercase;
+}
+.screen .what{
+  margin:0; font-size:11px; line-height:1.5; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+/* the closing line only takes space when there is one */
+.screen .msg{
+  margin:0; max-height:0; opacity:0; overflow:hidden;
+  font-size:12px; line-height:1.55; color:var(--tint);
+  transition:max-height .34s ease, opacity .34s ease, margin .34s ease;
+}
+.station.speaking .screen .msg{max-height:3.2em; opacity:1; margin-top:6px}
+.station.speaking .screen .what{opacity:.45}
+
+.screen .bar{
+  margin-top:8px; height:2px; border-radius:2px;
+  background:rgba(255,255,255,.1); overflow:hidden; opacity:0; transition:opacity .3s;
+}
+.station.busy .screen .bar{opacity:1}
+.screen .bar i{
+  display:block; height:100%; width:38%; border-radius:2px;
+  background:var(--tint); box-shadow:0 0 8px var(--tint);
+  animation:sweep 1.3s ease-in-out infinite;
+}
+@keyframes sweep{0%{margin-left:-38%}100%{margin-left:100%}}
+.screen .count{
+  margin-top:6px; font-size:9px; color:var(--dim);
+  display:flex; justify-content:space-between; font-variant-numeric:tabular-nums;
+}
+
+/* a pointer from the card back to the desk it belongs to */
+.screen::after{
+  content:""; position:absolute; width:7px; height:7px; rotate:45deg;
+  background:rgba(9,16,30,.96); border:1px solid color-mix(in srgb,var(--tint) 50%,transparent);
+}
+.station[data-panel="above"] .screen::after{bottom:-5px; border-top:0; border-left:0}
+.station[data-panel="below"] .screen::after{top:-5px; border-bottom:0; border-right:0}
+.station[data-side="centre"] .screen::after{left:calc(50% - 4px)}
+.station[data-side="left"]   .screen::after{left:112px}
+.station[data-side="right"]  .screen::after{right:112px}
+
+/* keep the nameplate clear of a card opening downward */
+
+
+/* the score strip and the quest log own their corners; nothing may sit under
+   them, so the two back-row desks nearest them lose their glow ring instead of
+   overlapping it */
+#score,#quests{pointer-events:none}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Active dock — a compact live roster, not a stack of alert cards.
+   Floating one card per desk cannot be made safe: eleven cards over eleven
+   figures is a packing problem with no solution at this scale, so what is
+   running is listed here instead, laid out rather than positioned.
+
+   This used to be one bordered, colour-edged card per row — three separate
+   boxes each shouting its own role colour down the left side. One shared
+   container now holds every row; the only colour left is a small dot, and
+   the box itself vanishes rather than sitting empty when nobody is working
+   (`dock()` sets `hidden` on the container, not just on its rows). */
+#dock{
+  position:absolute; left:20px; bottom:18px; z-index:31; width:min(340px,34vw);
+  /* Same outer padding as #quests — the two bottom-corner panels read as one
+     component family now, not two boxes with their own idea of a margin. */
+  padding:8px 11px 9.5px; border-radius:10px;
+  background:var(--glass); border:1px solid rgba(240,180,94,.14);
+  backdrop-filter:blur(10px);
+}
+#dock h2{
+  margin:0 0 3px; font-size:8px; letter-spacing:.17em;
+  color:var(--faint); font-weight:600; text-transform:uppercase;
+}
+#dock .rows{display:flex; flex-direction:column; gap:2px}
+#dock .row{
+  display:grid; grid-template-columns:1fr auto; align-items:center;
+  gap:10px; padding:7px 3px; border-radius:6px;
+  transition:background .2s ease;
+  animation:rise .34s cubic-bezier(.2,.9,.3,1);
+}
+#dock .row:hover{background:rgba(255,255,255,.045)}
+#dock .row:hover b{color:var(--ink)}
+
+/* the one strong colour cue left, and only while the row is here at all —
+   every row this component ever shows today is a working one, so the dim
+   variant only matters if a future idle row is added to this same list */
+#dock .dot{
+  width:6px; height:6px; border-radius:50%; flex:none;
+  background:var(--tone); opacity:.45; transition:opacity .3s ease;
+}
+#dock .row.busy .dot{opacity:1}
+@media (prefers-reduced-motion:no-preference){
+  #dock .row.busy .dot{animation:dockpulse 1.8s ease-in-out infinite}
+}
+@keyframes dockpulse{
+  50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--tone) 30%,transparent)}
+}
+
+#dock .info{min-width:0; display:flex; flex-direction:column; gap:1px}
+/* the dot sits here, beside the name, so it reads as part of the same line —
+   not centred against the row's full two-line height the way a grid sibling
+   of .info and .meta would be */
+#dock .name{display:flex; align-items:center; gap:6px; min-width:0}
+#dock .row b{
+  display:block; font-size:9px; line-height:1.25; font-weight:600; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--dim); transition:color .2s ease;
+}
+#dock .row .what{
+  display:block; font-size:10px; line-height:1.3; color:var(--dim); opacity:.75;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  /* lines up with the role name's text, not the dot in front of it — 6px dot
+     + 6px gap in .name above, matched here so the dot reads as a marker
+     hanging off the block of text rather than shifting the second line */
+  margin-left:12px;
+}
+#dock .meta{flex:none; text-align:right}
+#dock .clock{
+  display:block; font-size:9.5px; font-weight:500; color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+#dock .n{
+  display:block; margin-top:1px; font-size:8px; font-weight:400; color:var(--faint);
+  font-variant-numeric:tabular-nums;
+}
+#score{left:20px}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Drawn desks.
+   The painted set has eight podiums. The pipeline has eleven roles, and the
+   three without one — intake, document control, release — were left standing
+   on bare floor. Rather than repaint the room, the missing podiums are drawn
+   in the same language as the painted ones: a dark plinth, a neon strip at the
+   base, a pool of the role's own colour on the floor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.station[data-desk="drawn"] .figure::after{
+  content:""; position:absolute; left:50%; bottom:-6%; translate:-50% 0;
+  width:150%; height:26%; z-index:-1;
+  background:
+    linear-gradient(180deg, rgba(26,34,52,.0) 0%, rgba(20,28,44,.92) 38%, rgba(9,14,24,.96) 100%);
+  border-radius:44% 44% 16% 16% / 58% 58% 22% 22%;
+  box-shadow:
+    inset 0 2px 0 -1px color-mix(in srgb,var(--tint) 55%,transparent),
+    0 10px 30px -12px #000;
+}
+.station[data-desk="drawn"] .figure::before{
+  content:""; position:absolute; left:50%; bottom:-2%; translate:-50% 0;
+  width:128%; height:4px; z-index:-1; border-radius:50%;
+  background:var(--tint); opacity:.34;
+  box-shadow:0 0 22px -2px var(--tint);
+  transition:opacity .5s;
+}
+.station[data-desk="drawn"].awake .figure::before{opacity:.95}
+/* the character stands on top of the plinth, not inside it */
+.station[data-desk="drawn"] .pad{bottom:2%}
+.station[data-desk="drawn"] .shade{opacity:.22}
+
+
+/* perspective: the back arc stands further into the room */
+.station[data-row="back"]{--figbase:clamp(48px, calc(var(--stage-h) * .126), 180px)}
+
+
+/* The desk holograms used to stand here: a tinted panel behind each character
+   with its glyph, its name and an equaliser, plus a shaft of light rising
+   through it. They were built for a dark set where eleven identical podiums
+   needed telling apart. On a daylit room they read as haze in front of the
+   painting and behind the cat, and the things they said — the name, the role —
+   are now on the plate under the character and on the card at hover.
+
+   Who is working is still shown, by the character itself: the sprite brightens
+   and takes its role's colour, and the ring at its feet lights up. */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Controller.
+   A room you can only watch is a video. This bar is the difference: pick the
+   project, drive the playback, and start the pipeline for real — the run button
+   spawns tools/auto.sh on the machine serving the page, which is why the server
+   binds to 127.0.0.1 and why the button is dark until --allow-run says so.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Same warm-dark/glass family as #dock and #quests — was a cooler navy panel
+   with the stronger .22 gold border, the odd one out among the floating
+   panels rather than a member of the same family. */
+#control{
+  position:absolute; left:50%; bottom:16px; translate:-50% 0; z-index:35;
+  display:flex; align-items:center; gap:10px; padding:6px 9px;
+  border-radius:10px; background:var(--glass); border:1px solid rgba(240,180,94,.14);
+  backdrop-filter:blur(14px); box-shadow:0 16px 50px -20px #000;
+}
+#control .group{display:flex; align-items:center; gap:5px}
+#control .sep{width:1px; height:16px; background:rgba(240,180,94,.14)}
+#control button{
+  border:1px solid transparent; background:transparent; color:var(--dim);
+  padding:5px 9px; border-radius:6px; cursor:pointer; font-size:11.5px;
+  letter-spacing:.04em; transition:all .2s; white-space:nowrap;
+}
+#control button:hover{background:rgba(240,180,94,.1); color:var(--ink)}
+#control button:focus-visible{outline:2px solid #F0B45E; outline-offset:1px}
+#control .transport button{font-size:13px; min-width:32px}
+#control .speeds{display:flex; gap:2px; margin-left:4px}
+#control .speeds button{padding:4px 7px; font-size:10.5px; min-width:0}
+#control .speeds button.on{background:rgba(240,180,94,.16); color:#F0B45E}
+#control .go{
+  display:inline-flex; align-items:center; gap:6px; margin-left:6px;
+  border-color:color-mix(in srgb,var(--pass) 55%,transparent); color:var(--pass);
+  font-weight:600;
+}
+#control .go:hover{background:color-mix(in srgb,var(--pass) 15%,transparent); color:var(--pass)}
+#control .go[disabled]{opacity:.35; cursor:not-allowed}
+#control .go.running{
+  border-color:var(--warn); color:var(--warn);
+  animation:runpulse 1.6s ease-in-out infinite;
+}
+@keyframes runpulse{50%{box-shadow:0 0 22px -6px var(--warn)}}
+#control .stop{border-color:color-mix(in srgb,var(--stop) 55%,transparent); color:var(--stop)}
+
+/* project tabs */
+#tabs button{
+  display:flex; flex-direction:column; align-items:flex-start; gap:1px;
+  padding:4px 11px; line-height:1.25;
+}
+#tabs button b{font-size:10.5px; letter-spacing:.1em; font-weight:600}
+#tabs button u{
+  text-decoration:none; font-size:9px; opacity:.62; max-width:120px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#tabs button.on{
+  background:rgba(240,180,94,.13); color:#F0B45E;
+  border-color:color-mix(in srgb,#F0B45E 45%,transparent);
+}
+#tabs button.busy b::after{
+  content:""; display:inline-block; width:5px; height:5px; margin-left:6px;
+  border-radius:50%; background:var(--warn); box-shadow:0 0 7px var(--warn);
+  animation:beat 1.4s ease-in-out infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Chat.
+   The room was watch-only, which left the obvious question unanswered: how do
+   you give the crew a brief? Here. What is typed goes to Claude Code verbatim,
+   the crew starts working, and the room animates from the hooks that work
+   fires — the panel and the room are two views of the same run.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Same warm-dark/glass family as #dock and #quests, and a lighter shadow to
+   match — was a cooler navy panel with the stronger .22 gold border and a
+   heavier drop shadow than the rest of the panel system. */
+#chat{
+  position:absolute; right:20px; bottom:74px; z-index:36; width:320px;
+  display:flex; flex-direction:column; border-radius:10px; overflow:hidden;
+  background:var(--glass); border:1px solid rgba(240,180,94,.14);
+  backdrop-filter:blur(14px); box-shadow:0 12px 30px -18px #000;
+}
+#chat header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 11px; border-bottom:1px solid rgba(240,180,94,.14);
+}
+#chat header b{font-size:10px; letter-spacing:.18em; color:#F0B45E; font-weight:600}
+#chat-min{
+  background:transparent; border:0; color:var(--faint); cursor:pointer;
+  display:grid; place-items:center; padding:0 4px; border-radius:6px;
+}
+#chat-min:hover{color:var(--dim)}
+/* same amber keyboard-focus treatment as #control button (e.g. "ดูคำสั่งภารกิจ")
+   — :focus-visible only, so a mouse click never leaves the ring showing */
+#chat-min:focus-visible{outline:2px solid #F0B45E; outline-offset:1px}
+#chat-min svg{
+  width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+#chat-log{
+  max-height:190px; overflow-y:auto; padding:9px 11px;
+  display:flex; flex-direction:column; gap:7px; font-size:11.5px; line-height:1.65;
+}
+#chat-log:empty::before{
+  content:"ยังไม่มีคำสั่ง — พิมพ์โจทย์ได้เลย"; color:var(--faint); font-size:11px;
+}
+#chat-log .msg{padding:6px 10px; border-radius:8px; max-width:94%; word-break:break-word}
+#chat-log .you{
+  align-self:flex-end; background:rgba(240,180,94,.14); color:var(--ink);
+  border:1px solid color-mix(in srgb,#F0B45E 35%,transparent); border-bottom-right-radius:2px;
+}
+#chat-log .crew{
+  align-self:flex-start; background:rgba(255,255,255,.045); color:var(--dim);
+  border:1px solid rgba(255,255,255,.07); border-bottom-left-radius:2px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px;
+}
+#chat-log .err{border-color:var(--stop); color:var(--stop)}
+#chat-form{display:flex; gap:7px; padding:9px 11px; border-top:1px solid rgba(240,180,94,.14)}
+#chat-in{
+  flex:1; resize:none; background:rgba(255,255,255,.04); color:var(--ink);
+  border:1px solid rgba(240,180,94,.14); border-radius:8px; padding:7px 9px;
+  font:inherit; font-size:11.5px; line-height:1.55;
+}
+#chat-in:focus{outline:none; border-color:#F0B45E}
+#chat-in::placeholder{color:var(--faint); font-size:11px}
+#chat-send{
+  align-self:flex-end; padding:7px 11px; border-radius:8px; cursor:pointer;
+  background:transparent; color:var(--pass); font-size:11.5px; font-weight:600;
+  border:1px solid color-mix(in srgb,var(--pass) 50%,transparent);
+}
+#chat-send:hover{background:color-mix(in srgb,var(--pass) 14%,transparent)}
+#chat-send[disabled]{opacity:.4; cursor:not-allowed}
+#chat.min #chat-log, #chat.min #chat-form, #chat.min #chat-new{display:none}
+/* the verdict card moves up so the panel has the corner */
+#verdict{bottom:auto; top:calc(var(--hud) + 10px + 186px + 96px)}
+
+#chat header .grow{flex:1}
+#chat-new{
+  background:transparent; border:1px solid rgba(240,180,94,.14); color:var(--dim);
+  cursor:pointer; font-size:9.5px; letter-spacing:.1em; padding:2px 8px;
+  border-radius:4px; margin-right:6px;
+}
+#chat-new:hover{color:#F0B45E; border-color:#F0B45E}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Entrance.
+   Starting a project is a form, not a conversation: the five opening questions
+   have short factual answers, and typing them into a chat and waiting for an
+   agent to write them back is slower and less reliable than typing them into
+   the fields they belong to. What a blank field buys you is a TBD and an open
+   question — which is the honest outcome, and the one the pipeline is built on.
+   ═══════════════════════════════════════════════════════════════════════════ */
+#splash .sheet{
+  width:min(560px, 92vw); max-height:88vh; overflow-y:auto;
+  text-align:center; padding:26px 30px 22px;
+}
+#splash .lede{margin:0 0 26px}
+#splash h2{
+  margin:0 0 12px; font-size:9.5px; letter-spacing:.22em; color:var(--faint);
+  font-weight:600; text-transform:uppercase;
+}
+#pick-list{display:flex; flex-direction:column; gap:7px; margin-bottom:14px}
+#pick-list:empty::before{
+  content:"ยังไม่มีโปรเจกต์ — เปิดใหม่ได้เลย"; color:var(--faint); font-size:12px;
+}
+.proj{
+  display:grid; grid-template-columns:auto 1fr auto; gap:13px; align-items:center;
+  padding:11px 15px; border-radius:9px; cursor:pointer; text-align:left;
+  background:rgba(255,255,255,.035); border:1px solid var(--edge); color:var(--ink);
+  transition:all .2s;
+}
+.proj:hover{background:rgba(240,180,94,.1); border-color:#F0B45E}
+.proj b{font-size:13px; letter-spacing:.14em; color:#F0B45E; font-weight:600}
+.proj .who{min-width:0}
+.proj .who span{display:block; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.proj .who em{display:block; font-style:normal; font-size:10px; color:var(--faint); margin-top:1px}
+.proj .gates{display:flex; gap:3px}
+.proj .gates i{
+  width:7px; height:7px; border-radius:2px; background:rgba(255,255,255,.13);
+}
+.proj .gates i.pass{background:var(--pass)}
+.proj .gates i.fail{background:var(--stop)}
+
+#splash button{
+  padding:10px 26px; border-radius:7px; cursor:pointer; font-size:12.5px;
+  letter-spacing:.1em; border:1px solid #F0B45E; background:transparent; color:#F0B45E;
+  transition:all .25s;
+}
+#splash button:hover{background:rgba(240,180,94,.13)}
+#splash button.ghost{border-color:var(--edge); color:var(--dim)}
+#splash button.ghost:hover{border-color:#F0B45E; color:#F0B45E; background:transparent}
+#pick-new{width:100%; padding:10px}
+
+#newproj{text-align:left; display:flex; flex-direction:column; gap:11px}
+#newproj label{
+  display:flex; flex-direction:column; gap:4px;
+  font-size:11px; color:var(--dim); line-height:1.5;
+}
+#newproj input, #newproj textarea{
+  background:rgba(255,255,255,.045); border:1px solid var(--edge); border-radius:7px;
+  padding:8px 11px; color:var(--ink); font:inherit; font-size:12.5px; resize:vertical;
+}
+#newproj input:focus, #newproj textarea:focus{outline:none; border-color:#F0B45E}
+#newproj .hint{margin:2px 0 0; font-size:10.5px; color:var(--faint); line-height:1.6}
+#newproj .hint b{color:var(--warn)}
+#newproj .row{display:flex; gap:9px; margin-top:4px}
+#newproj .row button{flex:1}
+#newproj .err{
+  margin:0; font-size:11.5px; color:var(--stop);
+  padding:8px 11px; border-radius:7px; background:color-mix(in srgb,var(--stop) 12%,transparent);
+}
+
+/* `hidden` must beat the layout rules above it — a display: value set by a
+   selector outranks the attribute's own UA style, which is how the new-project
+   form ended up showing next to the list it was supposed to replace. */
+#newproj[hidden], #pick[hidden], [hidden]{display:none !important}
+
+
+/* workspace chooser */
+#ws{
+  display:flex; align-items:center; gap:9px; justify-content:center;
+  margin:0 0 18px; font-size:10.5px; flex-wrap:wrap;
+}
+#ws .lbl{color:var(--faint); letter-spacing:.14em; text-transform:uppercase; font-size:8.5px}
+#ws code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px; color:var(--dim);
+  background:rgba(255,255,255,.045); border:1px solid var(--edge);
+  padding:3px 9px; border-radius:5px; max-width:340px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left;
+}
+#splash button.tiny{padding:3px 10px; font-size:10px; letter-spacing:.08em}
+
+/* #browse and #br-list styled a hand-built folder browser with no markup
+   left anywhere in index.html — removed alongside the JS reference to it. */
+
+#newproj .stack{display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px}
+#newproj select{
+  background:rgba(255,255,255,.045); border:1px solid var(--edge); border-radius:7px;
+  padding:8px 9px; color:var(--ink); font:inherit; font-size:12px; cursor:pointer;
+}
+#newproj select:focus{outline:none; border-color:#F0B45E}
+#newproj select option{background:#0B1220; color:var(--ink)}
+@media (max-width:520px){ #newproj .stack{grid-template-columns:1fr} }
+
+#newproj .gitrow{display:grid; grid-template-columns:1fr 1fr; gap:9px; align-items:end}
+#newproj .gitrow label:only-child{grid-column:1 / -1}
+
+
+/* Scrollbars.
+   The platform default is a white bar on a near-black page, which is the first
+   thing the eye lands on. These are the same colour as the panel edges, and
+   they stay out of the way until there is something to scroll. */
+*{scrollbar-width:thin; scrollbar-color:rgba(240,180,94,.28) transparent}
+*::-webkit-scrollbar{width:8px; height:8px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+  background:rgba(240,180,94,.22); border-radius:8px;
+  border:2px solid transparent; background-clip:content-box;
+}
+*::-webkit-scrollbar-thumb:hover{background:rgba(240,180,94,.42); background-clip:content-box}
+*::-webkit-scrollbar-corner{background:transparent}
+
+/* The entrance must fit without the page itself scrolling: the form is the
+   thing that scrolls, and only when it has to. */
+#splash{align-items:center}
+#splash .sheet{max-height:none; overflow:visible}
+#newproj{max-height:min(58vh, 520px); overflow-y:auto; padding-right:4px}
+#pick-list{max-height:min(34vh, 300px); overflow-y:auto}
+
+/* The verdict card only exists once there is a verdict. A panel that says
+   "nothing has been decided yet" is a panel reporting the absence of news. */
+#verdict{opacity:0; visibility:hidden; transition:opacity .4s, visibility .4s, border-color .4s, box-shadow .4s}
+#verdict.PASS, #verdict.CORRECTED, #verdict.BLOCKED{opacity:1; visibility:visible}
+
+/* collapsed, the panel is a single bar that says it is there — matching
+   #quests's own width (228px) so the two right-anchored panels stacked
+   above one another share both edges, not just the right one. .grow (in the
+   header rule above) now has real space to fill at this width, so it does
+   the job of pushing + to the far edge on its own — no separate gap hack
+   needed like the shrink-to-fit version this replaced. */
+#chat.min{width:228px}
+#chat.min header b::after{content:" · พิมพ์สั่งงาน"; color:var(--faint); letter-spacing:0; font-weight:400}
+
+/* Row 2 (project code + name) and row 3 (session) used to sit side by side
+   on one line — a long project name had nowhere to go but push the session
+   metadata along with it, or wrap awkwardly. Stacked instead, each row keeps
+   its own space: the name truncates on its own line (min-width:0 lets this
+   flex item shrink below its content's natural width, which text-overflow
+   needs to ever trigger), and title="" on <b> (set in app.js) carries the
+   full name for hover. */
+.brand{min-width:0}
+.brand span{display:flex; flex-direction:column; gap:1px; min-width:0}
+.brand span b{
+  display:block; max-width:220px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; font-weight:500; color:var(--dim);
+}
+.brand span u{
+  text-decoration:none; font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:9.5px; font-weight:400; color:var(--faint); font-variant-numeric:tabular-nums;
+}
+.brand span u.live{color:var(--warn)}
+
+/* the one project this room belongs to */
+#tabs .here{
+  display:flex; flex-direction:column; gap:1px; padding:3px 4px;
+}
+#tabs .here b{font-size:11px; letter-spacing:.14em; color:#F0B45E; font-weight:600}
+#tabs .here u{
+  text-decoration:none; font-size:9.5px; color:var(--dim);
+  max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#tabs .here.busy b::after{
+  content:""; display:inline-block; width:5px; height:5px; margin-left:6px;
+  border-radius:50%; background:var(--warn); box-shadow:0 0 7px var(--warn);
+  animation:beat 1.4s ease-in-out infinite;
+}
+
+/* project-switch icon — belongs to the identity block above, not the action
+   group: no border, ghost background, small enough to read as an accessory
+   to the name rather than a third button competing with it. */
+#control #leave{
+  display:grid; place-items:center; width:22px; height:22px;
+  padding:0; margin-right:4px; border-radius:6px; border:0;
+  background:transparent; color:var(--faint);
+}
+#leave svg{
+  width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+#control #leave:hover{background:rgba(240,180,94,.12); color:var(--ink)}
+#tabs .none{font-size:11px; color:var(--faint); padding:0 8px}
+
+/* running: the same button, now a stop */
+#control .go.running{
+  border-color:var(--stop); color:var(--stop);
+  animation:runpulse 1.8s ease-in-out infinite;
+}
+#control .go.running:hover{background:color-mix(in srgb,var(--stop) 14%,transparent)}
+#control .transport[hidden]{display:none !important}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Feed.
+   Secondary information, not a competing panel — the stage behind it stays
+   the thing the eye is drawn to. Collapsed shows only the latest 5 lines
+   (JS renders exactly that many, faded oldest-to-newest so the newest line
+   is the one being read); "ทั้งหมด" swaps in the full run's history in a
+   short scrollable column instead. Each line is clipped with an ellipsis and
+   carries its full text in a tooltip, so a long shell command or path never
+   pushes the box — or the room behind it — wider or taller than intended.
+   ═══════════════════════════════════════════════════════════════════════════ */
+#feed{
+  position:absolute; left:20px; top:calc(var(--hud) + 78px); z-index:30;
+  width:min(360px,36vw);
+}
+#feed header{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  margin:0 6px 3px;
+}
+#feed h2{
+  margin:0; font-size:8.5px; letter-spacing:.18em; color:var(--faint);
+  font-weight:600; text-transform:uppercase;
+}
+#feed-toggle{
+  background:transparent; border:0; color:var(--faint); cursor:pointer;
+  display:grid; place-items:center; padding:0 2px; border-radius:6px;
+  transition:color .15s ease;
+}
+#feed-toggle svg{
+  width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round; display:block;
+}
+#feed-toggle:hover{color:var(--dim)}
+/* same amber keyboard-focus treatment as #control button (e.g. "ดูคำสั่งภารกิจ")
+   — :focus-visible only, so a mouse click never leaves the ring showing */
+#feed-toggle:focus-visible{outline:2px solid #F0B45E; outline-offset:1px}
+
+#feed .rows{
+  display:flex; flex-direction:column; justify-content:flex-end; gap:2px;
+  padding:6px 8px; border-radius:8px; overflow:hidden;
+  background:linear-gradient(90deg, rgba(30,19,11,.72), rgba(30,19,11,.4) 78%, transparent);
+  -webkit-mask-image:linear-gradient(180deg, transparent, #000 18%);
+          mask-image:linear-gradient(180deg, transparent, #000 18%);
+}
+#feed.expanded .rows{
+  max-height:38vh; overflow-y:auto;
+  -webkit-mask-image:none; mask-image:none;
+}
+#feed .rows div{
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:11px; line-height:1.55; flex:none; transition:opacity .2s ease;
+}
+#feed .rows div b{margin-right:5px; font-weight:600}
+/* file paths, tool names, repeated boilerplate — present, but quieter than
+   the agent name and what it did, which are the part worth reading first */
+#feed .rows .meta{
+  color:var(--faint); opacity:.82; font-size:10px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+}
+
+/* #progress (the second, live "ระยะ N/7" bar) lived here — removed, the
+   8-segment stage rail above it is the one progress indicator that stayed. */

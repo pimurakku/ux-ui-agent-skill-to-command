@@ -1,0 +1,20 @@
+{
+  "name": "design-lazyyy",
+  "description": "A teaching pipeline for the AI Design System Bootcamp — 24 skills from opening a project to shipping it, with a Q&A intake that asks before it writes and six gates that can refuse",
+  "version": "1.0.0",
+  "author": {
+    "name": "design-lazyyy"
+  },
+  "homepage": "https://github.com/plugin87/design-lazyyy-skills",
+  "repository": "https://github.com/plugin87/design-lazyyy-skills",
+  "license": "MIT",
+  "keywords": [
+    "bootcamp",
+    "design-system",
+    "product-owner",
+    "system-analyst",
+    "quality-assurance",
+    "workflow",
+    "thai"
+  ]
+}
